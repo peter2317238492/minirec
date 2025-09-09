@@ -22,6 +22,7 @@ const newItems = [
     ],
     price: 30,
     rating: 4.6,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '朝阳区北辰东路5号',
@@ -45,6 +46,7 @@ const newItems = [
     ],
     price: 299,
     rating: 4.4,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '朝阳区东四环小武基北路',
@@ -67,6 +69,7 @@ const newItems = [
     ],
     price: 25,
     rating: 4.5,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '东城区雍和宫大街12号',
@@ -89,6 +92,7 @@ const newItems = [
     ],
     price: 0,
     rating: 4.3,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '西城区羊房胡同',
@@ -113,6 +117,7 @@ const newItems = [
     ],
     price: 298,
     rating: 4.6,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '朝阳区团结湖北口3号楼',
@@ -135,6 +140,7 @@ const newItems = [
     ],
     price: 25,
     rating: 4.0,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '西城区西安门大街',
@@ -157,6 +163,7 @@ const newItems = [
     ],
     price: 158,
     rating: 4.5,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '东城区东华门大街95号',
@@ -180,6 +187,7 @@ const newItems = [
     ],
     price: 180,
     rating: 4.2,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '西城区前门西大街正阳市场3号楼',
@@ -206,6 +214,7 @@ const newItems = [
     ],
     price: 3800,
     rating: 4.9,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '朝阳区新源南路8号',
@@ -230,6 +239,7 @@ const newItems = [
     ],
     price: 2800,
     rating: 4.8,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '海淀区宫门前街1号',
@@ -254,6 +264,7 @@ const newItems = [
     ],
     price: 299,
     rating: 3.9,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '东城区东单北大街69号',
@@ -277,6 +288,7 @@ const newItems = [
     ],
     price: 2200,
     rating: 4.7,
+    purchaseCount: 0,
     location: {
       city: '北京',
       address: '朝阳区呼家楼京广中心',

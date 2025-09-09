@@ -229,12 +229,13 @@ app.put('/api/users/:userId/preferences', authMiddleware as any, async (req: Req
   }
 });
 
-// 记录购买历史
+// 记录购买历史（同时更新购买人数）
 app.post('/api/users/:userId/purchase', authMiddleware as any, async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
     const { itemId, itemName, category, price } = req.body;
     
+    // 记录到用户购买历史
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: '用户不存在' });
@@ -247,8 +248,15 @@ app.post('/api/users/:userId/purchase', authMiddleware as any, async (req: Reque
       price,
       purchaseDate: new Date()
     });
-    
     await user.save();
+    
+    // 更新项目的购买人数
+    await Item.findByIdAndUpdate(
+      itemId,
+      { $inc: { purchaseCount: 1 } },  // 购买人数加1
+      { new: true }
+    );
+    
     res.json({ message: '购买记录成功' });
   } catch (error) {
     res.status(500).json({ message: '记录购买失败', error });

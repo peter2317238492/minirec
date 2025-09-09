@@ -26,6 +26,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=故宫博物院'],
         price: 60,
         rating: 4.8,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '东城区景山前街4号',
@@ -54,6 +55,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=八达岭长城'],
         price: 40,
         rating: 4.7,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '延庆区G6京藏高速58号出口',
@@ -74,6 +76,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=颐和园'],
         price: 30,
         rating: 4.6,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '海淀区新建宫门路19号',
@@ -94,6 +97,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=天坛'],
         price: 15,
         rating: 4.5,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '东城区天坛东里甲1号',
@@ -116,6 +120,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=全聚德烤鸭'],
         price: 268,
         rating: 4.5,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '前门大街30号',
@@ -144,6 +149,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=东来顺涮羊肉'],
         price: 128,
         rating: 4.4,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '王府井大街198号',
@@ -164,6 +170,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=姚记炒肝'],
         price: 28,
         rating: 4.3,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '鼓楼东大街311号',
@@ -186,6 +193,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=希尔顿酒店'],
         price: 880,
         rating: 4.6,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '王府井东街8号',
@@ -207,6 +215,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=四季酒店'],
         price: 1280,
         rating: 4.8,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '朝阳区亮马桥路48号',
@@ -228,6 +237,7 @@ const seedData = async () => {
         images: ['https://via.placeholder.com/400x300?text=如家酒店'],
         price: 239,
         rating: 4.0,
+        purchaseCount: 0,
         location: {
           city: '北京',
           address: '前门东大街2号',

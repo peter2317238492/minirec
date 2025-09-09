@@ -12,6 +12,7 @@ interface Item {
   images: string[];
   price: number;
   rating: number;
+  purchaseCount?: number;
   location: {
     city: string;
     address: string;
@@ -125,6 +126,16 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
 };
 
 const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick }) => {
+  // 调试输出
+  useEffect(() => {
+    console.log(`ItemCard渲染 - ${item.name}:`, {
+      purchaseCount: item.purchaseCount,
+      hasPurchaseCount: 'purchaseCount' in item
+    });
+  }, [item]);
+
+
+
   const categoryColors = {
     attraction: 'bg-blue-100 text-blue-800',
     food: 'bg-green-100 text-green-800',
@@ -135,6 +146,16 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
     attraction: '景点',
     food: '美食',
     hotel: '酒店'
+  };
+  
+  // 格式化购买人数显示
+  const formatPurchaseCount = (count: number = 0) => {
+    if (count >= 10000) {
+      return `${(count / 10000).toFixed(1)}万+`;
+    } else if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}k+`;
+    }
+    return count.toString();
   };
 
   return (
@@ -155,7 +176,14 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
         <span className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold ${categoryColors[item.category]}`}>
           {categoryLabels[item.category]}
         </span>
+        
+        {item.purchaseCount && item.purchaseCount >100 && (
+          <span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white rounded text-xs font-semibold">
+            🔥 热门
+          </span>
+        )}
       </div>
+
       <div className="p-4">
         <h3 className="text-lg font-semibold mb-2">{item.name}</h3>
         <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
@@ -163,13 +191,28 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
           <StarRating rating={item.rating} />
           <span className="text-lg font-bold text-red-500">¥{item.price}</span>
         </div>
-        <div className="flex items-center text-sm text-gray-500">
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          {item.location.city}
+
+
+        
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {item.location.city}
+          </div>
+
+          <div className="flex items-center text-orange-500">
+            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+            </svg>
+            <span className="font-medium">{formatPurchaseCount(item.purchaseCount)}人购买</span>
+          </div>
         </div>
+        
+
+
         <div className="flex flex-wrap gap-1 mt-2">
           {item.tags.slice(0, 3).map(tag => (
             <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
@@ -202,7 +245,15 @@ const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => v
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-3xl font-bold mb-2">{item.name}</h1>
-              <StarRating rating={item.rating} />
+              <div className="flex items-center gap-4">
+               <StarRating rating={item.rating} />
+               <span className="text-sm text-orange-500">
+                 <svg className="w-5 h-5 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                 </svg>
+                 {item.purchaseCount || 0}人已购买
+               </span>
+              </div>
             </div>
             <div className="text-right">
               <p className="text-3xl font-bold text-red-500">¥{item.price}</p>
@@ -455,6 +506,7 @@ const PreferencesModal: React.FC<{
 
 // Main App Component
 export default function App() {
+  console.log('========== 组件加载了 ==========');
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -476,8 +528,16 @@ export default function App() {
   }, [user, token]);
 
   const loadItems = async () => {
+    alert('loadItems 被调用了！');  // 👈 这个一定会弹出
     try {
       const data = await apiService.getItems(selectedCategory === 'all' ? undefined : selectedCategory);
+          // 👈 添加调试输出
+      console.log('从API获取的数据:', data);
+      if (data.length > 0) {
+        console.log('第一个项目:', data[0]);
+        console.log('purchaseCount是否存在:', 'purchaseCount' in data[0]);
+        console.log('purchaseCount值:', data[0].purchaseCount);
+      }
       setItems(data);
     } catch (error) {
       console.error('加载项目失败:', error);
@@ -553,6 +613,7 @@ export default function App() {
       images: [],
       price: 60,
       rating: 4.8,
+      purchaseCount: 125,
       location: { city: '北京', address: '东城区景山前街4号' },
       tags: ['历史', '文化', '建筑'],
       reviews: []

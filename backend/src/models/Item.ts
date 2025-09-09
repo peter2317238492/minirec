@@ -7,6 +7,7 @@ export interface IItem extends Document {
   images: string[];
   price: number;
   rating: number;
+  purchaseCount?:number;
   location: {
     city: string;
     address: string;
@@ -51,6 +52,11 @@ const ItemSchema: Schema = new Schema({
     default: 0,
     min: 0,
     max: 5
+  },
+  purchaseCount: {
+    type: Number,
+    default: 0,
+    min: 0
   },
   location: {
     city: String,
