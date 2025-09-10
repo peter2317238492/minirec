@@ -1,0 +1,9 @@
+# ml-service/requirements.txt
+fastapi==0.104.0
+uvicorn==0.24.0
+pydantic==2.4.0
+numpy==1.24.3
+scikit-learn==1.3.0
+pandas==2.0.3
+joblib==1.3.0
+python-multipart==0.0.6
