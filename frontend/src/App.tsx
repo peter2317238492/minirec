@@ -595,11 +595,24 @@ function App() {
         ...payload,
         date: new Date().toISOString()
       });
+      
+       // ★ 关键：提交成功后重新获取详情（带最新 reviews）
+      await fetchItemById(selectedItem._id);
+
       setShowReviewModal(false);
       // 可选：刷新详情页或评论列表
     } catch (err) {
       console.error('提交评论失败', err);
       // 可选：弹窗提示
+    }
+  };
+
+    const fetchItemById = async (id: string) => {
+    try {
+      const { data } = await axios.get(`/api/items/${id}`);
+      setSelectedItem(data);            // 关键：用最新详情覆盖
+    } catch (e) {
+      console.error('获取项目详情失败:', e);
     }
   };
 
@@ -698,7 +711,7 @@ function App() {
                     <ItemCard 
                       key={item._id} 
                       item={item} 
-                      onClick={() => setSelectedItem(item)}
+                       onClick={() => fetchItemById(item._id)}
                     />
                   ))}
                 </div>
@@ -724,7 +737,7 @@ function App() {
                     <ItemCard 
                       key={item._id} 
                       item={item} 
-                      onClick={() => setSelectedItem(item)}
+                      onClick={() => fetchItemById(item._id)}
                     />
                   ))}
                 </div>

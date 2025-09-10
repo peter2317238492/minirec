@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
+import axios from 'axios';
 import SearchBar from './components/SearchBar'; 
 import ImageGallery from './components/ImageGallery';
 import ReviewModal from './components/ReviewModal';
@@ -607,7 +608,14 @@ export default function App() {
       console.error('保存偏好失败:', error);
     }
   };
-
+  const fetchItemById = async (id: string) => {
+    try {
+      const { data } = await axios.get(`/api/items/${id}`);
+      setSelectedItem(data);            // 关键：用最新详情覆盖
+    } catch (e) {
+      console.error('获取项目详情失败:', e);
+    }
+  };
   // Mock data function
   const getMockItems = (): Item[] => [
     {
@@ -744,7 +752,7 @@ export default function App() {
                     <ItemCard 
                       key={item._id} 
                       item={item} 
-                      onClick={() => setSelectedItem(item)}
+                      onClick={() => fetchItemById(item._id)}
                     />
                   ))}
                 </div>
@@ -763,7 +771,7 @@ export default function App() {
                   <ItemCard 
                     key={item._id} 
                     item={item} 
-                    onClick={() => setSelectedItem(item)}
+                    onClick={() => fetchItemById(item._id)}
                   />
                 ))}
               </div>
