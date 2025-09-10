@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import './index.css';
 import SearchBar from './components/SearchBar'; 
 import ImageGallery from './components/ImageGallery';
+import ReviewModal from './components/ReviewModal';
+
+const [isRegister, setIsRegister] = useState(false);
+const [showReviewModal, setShowReviewModal] = useState(false);
 
 // Types
 interface Item {
@@ -225,7 +229,7 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
   );
 };
 
-const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => void }> = ({ item, onBack, onPurchase }) => {
+const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => void; onReview: () => void }> = ({ item, onBack, onPurchase, onReview }) => {
   return (
     <div className="max-w-4xl mx-auto">
       <button 
@@ -320,9 +324,10 @@ const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => v
 const LoginModal: React.FC<{ 
   isOpen: boolean; 
   onClose: () => void; 
-  onLogin: (user: User, token: string) => void 
-}> = ({ isOpen, onClose, onLogin }) => {
-  const [isRegister, setIsRegister] = useState(false);
+  onLogin: (user: User, token: string) => void;
+  isRegister: boolean;
+  setIsRegister: React.Dispatch<React.SetStateAction<boolean>>;
+}> = ({ isOpen, onClose, onLogin, isRegister, setIsRegister }) => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -669,7 +674,10 @@ export default function App() {
               </>
             ) : (
               <button 
-                onClick={() => setShowLoginModal(true)}
+                onClick={() => {
+                  setIsRegister(false); // 每次打开都重置为登录
+                  setShowLoginModal(true);
+                }}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 登录/注册
@@ -723,6 +731,7 @@ export default function App() {
             item={selectedItem} 
             onBack={() => setSelectedItem(null)}
             onPurchase={handlePurchase}
+            onReview={() => setShowReviewModal(true)}
           />
         ) : (
           <>
@@ -768,6 +777,8 @@ export default function App() {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onLogin={handleLogin}
+        isRegister={isRegister}
+        setIsRegister={setIsRegister}
       />
       
       <PreferencesModal
