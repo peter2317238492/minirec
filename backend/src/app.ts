@@ -361,8 +361,14 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
+let MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.warn('MONGODB_URI 环境变量未设置，使用本地数据库');
+  MONGODB_URI = 'mongodb://localhost:27017/recommendation_system';
+}
+
 // 数据库连接
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/recommendation_system')
+mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('✅ MongoDB连接成功');
   })
