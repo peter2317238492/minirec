@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './index.css';
 import SearchBar from './components/SearchBar';
+import ImageGallery from './components/ImageGallery';
 
 // 配置axios默认设置
 axios.defaults.baseURL = 'http://localhost:5000';
@@ -15,6 +16,7 @@ interface Item {
   images: string[];
   price: number;
   rating: number;
+  purchaseCount?: number;
   location: {
     city: string;
     address: string;
@@ -61,6 +63,16 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
 };
 
 const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick }) => {
+  // 调试输出
+  useEffect(() => {
+    console.log(`ItemCard渲染 - ${item.name}:`, {
+      purchaseCount: item.purchaseCount,
+      hasPurchaseCount: 'purchaseCount' in item
+    });
+  }, [item]);
+
+
+
   const categoryColors = {
     attraction: 'bg-blue-100 text-blue-800',
     food: 'bg-green-100 text-green-800',
@@ -72,6 +84,16 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
     food: '美食',
     hotel: '酒店'
   };
+  
+  // 格式化购买人数显示
+  const formatPurchaseCount = (count: number = 0) => {
+    if (count >= 10000) {
+      return `${(count / 10000).toFixed(1)}万+`;
+    } else if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}k+`;
+    }
+    return count.toString();
+  };
 
   return (
     <div 
@@ -79,19 +101,26 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
       onClick={onClick}
     >
       <div className="h-48 bg-gray-200 relative">
-        {item.images?.[0] ? (
-          <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-        )}
+        <img
+        src={item.images?.[0] || 'https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?w=400&q=80'}
+        alt={item.name}
+        className="w-full h-full object-cover"
+        onError={(e)=>{
+          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?w=400&q=80';
+        }}
+        loading="lazy"
+        />
         <span className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold ${categoryColors[item.category]}`}>
           {categoryLabels[item.category]}
         </span>
+        
+        {item.purchaseCount && item.purchaseCount >100 && (
+          <span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white rounded text-xs font-semibold">
+            🔥 热门
+          </span>
+        )}
       </div>
+
       <div className="p-4">
         <h3 className="text-lg font-semibold mb-2">{item.name}</h3>
         <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
@@ -99,13 +128,28 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
           <StarRating rating={item.rating} />
           <span className="text-lg font-bold text-red-500">¥{item.price}</span>
         </div>
-        <div className="flex items-center text-sm text-gray-500">
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          {item.location.city}
+
+
+        
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {item.location.city}
+          </div>
+
+          <div className="flex items-center text-orange-500">
+            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+            </svg>
+            <span className="font-medium">{formatPurchaseCount(item.purchaseCount)}人购买</span>
+          </div>
         </div>
+        
+
+
         <div className="flex flex-wrap gap-1 mt-2">
           {item.tags.slice(0, 3).map(tag => (
             <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
@@ -117,6 +161,7 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
     </div>
   );
 };
+
 
 const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => void }> = ({ item, onBack, onPurchase }) => {
   return (
@@ -132,23 +177,21 @@ const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => v
       </button>
       
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="h-96 bg-gray-200">
-          {item.images?.[0] ? (
-            <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          )}
-        </div>
+        <ImageGallery images={item.images} title={item.name} />
         
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-3xl font-bold mb-2">{item.name}</h1>
-              <StarRating rating={item.rating} />
+              <div className="flex items-center gap-4">
+               <StarRating rating={item.rating} />
+               <span className="text-sm text-orange-500">
+                 <svg className="w-5 h-5 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                 </svg>
+                 {item.purchaseCount || 0}人已购买
+               </span>
+              </div>
             </div>
             <div className="text-right">
               <p className="text-3xl font-bold text-red-500">¥{item.price}</p>
