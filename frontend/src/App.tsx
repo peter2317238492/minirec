@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './index.css';
 import SearchBar from './components/SearchBar';
+import ReviewModal from './components/ReviewModal';
 import ImageGallery from './components/ImageGallery';
-
 // 配置axios默认设置
 axios.defaults.baseURL = 'http://localhost:5000';
 
@@ -63,16 +63,6 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
 };
 
 const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick }) => {
-  // 调试输出
-  useEffect(() => {
-    console.log(`ItemCard渲染 - ${item.name}:`, {
-      purchaseCount: item.purchaseCount,
-      hasPurchaseCount: 'purchaseCount' in item
-    });
-  }, [item]);
-
-
-
   const categoryColors = {
     attraction: 'bg-blue-100 text-blue-800',
     food: 'bg-green-100 text-green-800',
@@ -84,8 +74,8 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
     food: '美食',
     hotel: '酒店'
   };
-  
-  // 格式化购买人数显示
+
+    // 格式化购买人数显示
   const formatPurchaseCount = (count: number = 0) => {
     if (count >= 10000) {
       return `${(count / 10000).toFixed(1)}万+`;
@@ -162,8 +152,7 @@ const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick
   );
 };
 
-
-const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => void }> = ({ item, onBack, onPurchase }) => {
+const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => void; onReview: () => void }> = ({ item, onBack, onPurchase, onReview }) => {
   return (
     <div className="max-w-4xl mx-auto">
       <button 
@@ -175,10 +164,9 @@ const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => v
         </svg>
         返回列表
       </button>
-      
+
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <ImageGallery images={item.images} title={item.name} />
-        
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -186,10 +174,10 @@ const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => v
               <div className="flex items-center gap-4">
                <StarRating rating={item.rating} />
                <span className="text-sm text-orange-500">
-                 <svg className="w-5 h-5 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                 </svg>
-                 {item.purchaseCount || 0}人已购买
+                  <svg className="w-5 h-5 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                   <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                  </svg>
+                  {item.purchaseCount || 0}人已购买
                </span>
               </div>
             </div>
@@ -197,13 +185,23 @@ const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => v
               <p className="text-3xl font-bold text-red-500">¥{item.price}</p>
               <button 
                 onClick={onPurchase}
-                className="mt-2 bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 transition-colors"
+                className="w-32 mt-2 bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 transition-colors"
               >
                 立即购买
               </button>
             </div>
           </div>
-          
+
+          {/* 新增评分评论按钮 */}
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={onReview}
+              className="w-32 bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 transition-colors"
+            >
+              评分/评论
+            </button>
+          </div>
+
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-2">简介</h2>
             <p className="text-gray-700">{item.description}</p>
@@ -259,8 +257,9 @@ const LoginModal: React.FC<{
   isOpen: boolean; 
   onClose: () => void; 
   onLogin: (user: User, token: string) => void 
-}> = ({ isOpen, onClose, onLogin }) => {
-  const [isRegister, setIsRegister] = useState(false);
+  isRegister: boolean;
+  setIsRegister: React.Dispatch<React.SetStateAction<boolean>>;
+}> = ({ isOpen, onClose, onLogin, isRegister, setIsRegister }) => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -480,8 +479,10 @@ function App() {
   const [recommendations, setRecommendations] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  
-  useEffect(() => {
+  const [isRegister, setIsRegister] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
+    useEffect(() => {
     // 检查本地存储的登录信息
     const savedUser = localStorage.getItem('user');
     const savedToken = localStorage.getItem('token');
@@ -578,6 +579,30 @@ function App() {
     }
   };
 
+    // 提交评分评论
+  const handleReviewSubmit = async (payload: {
+    rating: number;
+    taste: number;
+    packaging: number;
+    comment: string;
+  }) => {
+    if (!selectedItem || !user) return;
+    try {
+      await axios.post(`/api/items/${selectedItem._id}/reviews`, {
+        itemId: selectedItem._id, 
+        userId: user.id,
+        userName: user.username,
+        ...payload,
+        date: new Date().toISOString()
+      });
+      setShowReviewModal(false);
+      // 可选：刷新详情页或评论列表
+    } catch (err) {
+      console.error('提交评论失败', err);
+      // 可选：弹窗提示
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -603,7 +628,10 @@ function App() {
               </>
             ) : (
               <button 
-                onClick={() => setShowLoginModal(true)}
+                onClick={() => {
+                  setIsRegister(false); // 每次打开都重置为登录
+                  setShowLoginModal(true);
+                }}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 登录/注册
@@ -657,6 +685,7 @@ function App() {
             item={selectedItem} 
             onBack={() => setSelectedItem(null)}
             onPurchase={handlePurchase}
+            onReview={() => setShowReviewModal(true)}
           />
         ) : (
           <>
@@ -710,6 +739,8 @@ function App() {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onLogin={handleLogin}
+        isRegister={isRegister}
+        setIsRegister={setIsRegister}
       />
       
       {user && (
@@ -722,6 +753,16 @@ function App() {
           token={token}
         />
       )}
+
+      {/* 评分评论弹窗，直接加在这里 */}
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        item={selectedItem}
+        user={user}
+        onSubmit={handleReviewSubmit}
+        category={selectedItem?.category as 'food' | 'hotel' | 'attraction'}
+      />
     </div>
   );
 }

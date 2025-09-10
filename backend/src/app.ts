@@ -6,6 +6,8 @@ import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
 import Item from './models/Item';
 import User from './models/User';
+import itemRoutes from './routes/itemRoutes';
+import Review from './models/Review';
 
 dotenv.config();
 
@@ -14,7 +16,12 @@ const app = express();
 // 中间件
 app.use(cors());
 app.use(express.json());
+app.use('/api/items', itemRoutes);
 app.use(express.urlencoded({ extended: true }));
+app.use((req, _res, next) => {
+  console.log('[REQ]', req.method, req.originalUrl);
+  next();
+});
 
 // 扩展Request接口
 interface AuthRequest extends Request {
@@ -99,34 +106,71 @@ app.post('/api/items', authMiddleware as any, async (req: Request, res: Response
   }
 });
 
-// 添加评论
-app.post('/api/items/:id/reviews', authMiddleware as any, async (req: Request, res: Response) => {
+// 添加评论（双写：Review 集合 + Item.reviews[]）
+/*app.post('/api/items/:id/reviews', authMiddleware as any, async (req: Request, res: Response) => {
   try {
-    const { userId, userName, rating, comment } = req.body;
-    const item = await Item.findById(req.params.id);
-    
-    if (!item) {
-      return res.status(404).json({ message: '项目不存在' });
+    const itemId = req.params.id;
+    const { userId, userName, rating, taste, packaging, comment, date } = req.body;
+
+    // —— 基本校验 ——
+    if (!itemId) return res.status(400).json({ message: '缺少 itemId' });
+    if ([rating, taste, packaging].some((v: any) => typeof v !== 'number' || v < 1 || v > 5)) {
+      return res.status(400).json({ message: '评分必须为 1-5 的数字' });
     }
-    
-    item.reviews.push({
+    if (!userId || !userName) return res.status(400).json({ message: '缺少用户信息' });
+    if (!comment?.trim()) return res.status(400).json({ message: '评论不能为空' });
+
+    const item = await Item.findById(itemId);
+    if (!item) return res.status(404).json({ message: '项目不存在' });
+
+    // 1) 先写独立 Review 集合
+    const reviewDoc = await Review.create({
+      itemId,
       userId,
       userName,
       rating,
-      comment,
-      date: new Date()
+      taste,
+      packaging,
+      comment: String(comment).trim(),
+      date: date ? new Date(date) : new Date()
     });
-    
-    // 更新平均评分
-    const totalRating = item.reviews.reduce((sum, review) => sum + review.rating, 0);
-    item.rating = totalRating / item.reviews.length;
-    
+
+    // 2) 再把同一条评论嵌入到 Item.reviews（注意包含 reviewId/taste/packaging）
+    (item as any).reviews.push({
+      reviewId: reviewDoc._id,     // ← 关键：满足 IEmbeddedReview
+      userId,
+      userName,
+      rating,
+      taste,
+      packaging,
+      comment: String(comment).trim(),
+      date: reviewDoc.date
+    });
+
+    // （可选）只保留最近 N 条，避免文档过大
+    const MAX_EMBEDDED = 20;
+    if (item.reviews.length > MAX_EMBEDDED) {
+      (item as any).reviews = (item as any).reviews.slice(-MAX_EMBEDDED);
+    }
+
+    // 3) 维护平均分（如果 Item 里没有 ratingSum/ratingCount，就用数组求平均）
+    const anyItem = item as any;
+    if (typeof anyItem.ratingSum === 'number' && typeof anyItem.ratingCount === 'number') {
+      anyItem.ratingSum += rating;
+      anyItem.ratingCount += 1;
+      item.rating = Number((anyItem.ratingSum / anyItem.ratingCount).toFixed(2));
+    } else {
+      const total = (item.reviews as any[]).reduce((s, r) => s + (r.rating || 0), 0);
+      item.rating = Number((total / item.reviews.length).toFixed(2));
+    }
+
     await item.save();
-    res.json(item);
+    res.status(201).json({ message: 'ok', review: reviewDoc, item });
   } catch (error) {
+    console.error('add review error:', error);
     res.status(400).json({ message: '添加评论失败', error });
   }
-});
+});*/
 
 // ========== 用户相关路由 ==========
 
@@ -316,13 +360,9 @@ app.get('/', (req: Request, res: Response) => {
     }
   });
 });
-let MONGODB_URI = process.env.MONGODB_URI;
-if (!MONGODB_URI) {
-  console.warn('MONGODB_URI 环境变量未设置，使用本地数据库');
-  MONGODB_URI = 'mongodb://localhost:27017/recommendation_system';
-}
+
 // 数据库连接
-mongoose.connect(MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/recommendation_system')
   .then(() => {
     console.log('✅ MongoDB连接成功');
   })
