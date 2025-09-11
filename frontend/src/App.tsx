@@ -18,7 +18,7 @@ import { Item, User } from './types';
 import { apiService } from './services/api';
 
 // 配置axios
-axios.defaults.baseURL = 'http://localhost:5000';
+axios.defaults.baseURL = 'minirec-production.up.railway.app';
 
 function App() {
   // 状态管理
