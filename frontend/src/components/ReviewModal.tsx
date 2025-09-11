@@ -1,14 +1,6 @@
-import React, { useMemo, useState, useEffect } from 'react';
-
-interface Item {
-  _id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  username: string;
-}
+// frontend/src/components/ReviewModal.tsx
+import React, { useState } from 'react';
+import { Item, User } from '../types';
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -17,40 +9,16 @@ interface ReviewModalProps {
   user: User | null;
   onSubmit: (payload: {
     rating: number;
-    taste: number;      // 分项1：展示名称根据品类变化
-    packaging: number;  // 分项2：展示名称根据品类变化
+    taste?: number;
+    packaging?: number;
+    service?: number;
+    environment?: number;
+    location?: number;
+    comfort?: number;
     comment: string;
   }) => void;
-  category?: 'attraction' | 'food' | 'hotel';
+  category?: 'food' | 'hotel' | 'attraction';
 }
-
-// —— 不同品类下的标题、分项标签及文案 ——
-// 注意：payload 字段名保持 taste/packaging，不影响后端；仅前端展示名称变化
-const CATEGORY_UI = {
-  food: {
-    title: '美食评分/评论',
-    sub1Label: '口味',          // -> taste
-    sub2Label: '卫生',          // -> packaging
-    tip: '说说味道怎么样，给大家参考',
-    placeholder: '从口味、卫生、分量、包装等方面说一说～',
-  },
-  hotel: {
-    title: '酒店评分/评论',
-    sub1Label: '卫生',          // -> taste
-    sub2Label: '服务',          // -> packaging
-    tip: '住得舒不舒服？给后来的人一点参考',
-    placeholder: '可从卫生、服务、位置、噪音、设施等方面分享你的体验～',
-  },
-  attraction: {
-    title: '景点评分/评论',
-    sub1Label: '体验',          // -> taste
-    sub2Label: '环境',          // -> packaging
-    tip: '值不值得去？说说你的真实感受',
-    placeholder: '可从可玩性、环境秩序、交通便利、性价比等方面说一说～',
-  },
-} as const;
-
-const labels = ['非常不满意', '不满意', '一般', '满意', '非常满意'];
 
 const ReviewModal: React.FC<ReviewModalProps> = ({
   isOpen,
@@ -58,159 +26,269 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   item,
   user,
   onSubmit,
-  category = 'food',
+  category
 }) => {
-  const ui = CATEGORY_UI[category];
-
-  const [rating, setRating] = useState(0);
-  const [taste, setTaste] = useState(0);
-  const [packaging, setPackaging] = useState(0);
+  const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
-
-  // 每次弹窗打开或切换 item/category 时重置
-  useEffect(() => {
-    if (isOpen) {
-      setRating(0);
-      setTaste(0);
-      setPackaging(0);
-      setComment('');
-    }
-  }, [isOpen, item?._id, category]);
-
-  const ratingText = useMemo(() => (rating > 0 ? labels[rating - 1] : ''), [rating]);
-  const tasteText = useMemo(() => (taste > 0 ? labels[taste - 1] : ''), [taste]);
-  const packagingText = useMemo(() => (packaging > 0 ? labels[packaging - 1] : ''), [packaging]);
+  const [extraRatings, setExtraRatings] = useState({
+    taste: 5,
+    packaging: 5,
+    service: 5,
+    environment: 5,
+    location: 5,
+    comfort: 5
+  });
+  const [hoveredStar, setHoveredStar] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen || !item || !user) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 根据类别获取额外评分项
+  const getExtraRatingFields = () => {
+    switch (category || item.category) {
+      case 'food':
+        return [
+          { key: 'taste', label: '口味', icon: '🍽️' },
+          { key: 'service', label: '服务', icon: '👨‍🍳' },
+          { key: 'environment', label: '环境', icon: '🏠' }
+        ];
+      case 'hotel':
+        return [
+          { key: 'comfort', label: '舒适度', icon: '🛏️' },
+          { key: 'service', label: '服务', icon: '🛎️' },
+          { key: 'location', label: '位置', icon: '📍' }
+        ];
+      case 'attraction':
+        return [
+          { key: 'environment', label: '景色', icon: '🏞️' },
+          { key: 'service', label: '服务', icon: '🎫' },
+          { key: 'location', label: '交通', icon: '🚗' }
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const extraFields = getExtraRatingFields();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ rating, taste, packaging, comment: comment.trim() });
-    onClose();
+    
+    if (!comment.trim()) {
+      alert('请输入评论内容');
+      return;
+    }
+
+    setLoading(true);
+    
+    const payload: any = {
+      rating,
+      comment: comment.trim()
+    };
+
+    // 添加额外评分
+    extraFields.forEach(field => {
+      payload[field.key] = extraRatings[field.key as keyof typeof extraRatings];
+    });
+
+    try {
+      await onSubmit(payload);
+      // 重置表单
+      setRating(5);
+      setComment('');
+      setExtraRatings({
+        taste: 5,
+        packaging: 5,
+        service: 5,
+        environment: 5,
+        location: 5,
+        comfort: 5
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const StarRatingInput: React.FC<{
+    value: number;
+    onChange: (value: number) => void;
+    label?: string;
+    icon?: string;
+  }> = ({ value, onChange, label, icon }) => {
+    const [localHover, setLocalHover] = useState<number | null>(null);
+    
+    return (
+      <div className="flex items-center justify-between">
+        {label && (
+          <span className="text-sm text-gray-700 font-medium flex items-center gap-1 min-w-[80px]">
+            {icon && <span>{icon}</span>}
+            {label}
+          </span>
+        )}
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => onChange(star)}
+              onMouseEnter={() => setLocalHover(star)}
+              onMouseLeave={() => setLocalHover(null)}
+              className="focus:outline-none transition-transform hover:scale-110"
+            >
+              <svg
+                className={`w-6 h-6 ${
+                  star <= (localHover || value) ? 'text-yellow-400' : 'text-gray-300'
+                }`}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </button>
+          ))}
+          <span className="ml-2 text-sm text-gray-600 min-w-[40px]">
+            {localHover || value}/5
+          </span>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative w-[680px] max-w-[92vw] rounded-2xl bg-white p-6 shadow-xl">
-        {/* 关闭按钮 */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-          aria-label="关闭"
-        >
-          ✕
-        </button>
-
-        {/* 标题 */}
-        <div className="mb-4">
-          <h2 className="text-xl font-bold">{ui.title}</h2>
-        </div>
-
-        {/* 名称 */}
-        <div className="mb-3 flex items-center gap-3">
-          <div className="h-8 w-8 shrink-0 rounded-full bg-orange-100" />
-          <div className="text-base">
-            <span className="font-medium">{item.name}</span>
-          </div>
-        </div>
-
-        {/* 星级评分块 */}
-        <div className="mb-4 space-y-4">
-          <RatingRow label="总体" value={rating} onChange={setRating} rightText={ratingText} />
-          <RatingRow label={ui.sub1Label} value={taste} onChange={setTaste} rightText={tasteText} />
-          <RatingRow label={ui.sub2Label} value={packaging} onChange={setPackaging} rightText={packagingText} />
-        </div>
-
-        {/* 评论输入框 */}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <div className="mb-2 flex items-center gap-2 text-gray-500">
-              <span className="text-lg">✍️</span>
-              <span>{ui.tip}</span>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        {/* 头部 */}
+        <div className="p-6 border-b">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">撰写评价</h2>
+              <p className="text-sm text-gray-500 mt-1">{item.name}</p>
             </div>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={4}
-              placeholder={ui.placeholder}
-              className="w-full resize-y rounded-xl border border-gray-200 p-3 outline-none ring-0 placeholder:text-gray-400 focus:border-orange-400"
-            />
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
+        </div>
 
-          {/* 底部提交 */}
-          <div className="flex items-center justify-end gap-3">
+        {/* 表单内容 */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-6">
+            {/* 总体评分 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                总体评分
+              </label>
+              <div className="flex items-center justify-center">
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoveredStar(star)}
+                      onMouseLeave={() => setHoveredStar(null)}
+                      className="focus:outline-none transition-transform hover:scale-125"
+                    >
+                      <svg
+                        className={`w-10 h-10 ${
+                          star <= (hoveredStar || rating) ? 'text-yellow-400' : 'text-gray-300'
+                        }`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-center mt-2 text-sm text-gray-600">
+                {rating === 5 && '非常满意'}
+                {rating === 4 && '满意'}
+                {rating === 3 && '一般'}
+                {rating === 2 && '不满意'}
+                {rating === 1 && '非常不满意'}
+              </p>
+            </div>
+
+            {/* 额外评分项 */}
+            {extraFields.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  详细评分
+                </label>
+                <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+                  {extraFields.map(field => (
+                    <StarRatingInput
+                      key={field.key}
+                      value={extraRatings[field.key as keyof typeof extraRatings]}
+                      onChange={(value) => setExtraRatings({
+                        ...extraRatings,
+                        [field.key]: value
+                      })}
+                      label={field.label}
+                      icon={field.icon}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 评论内容 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                评论内容
+              </label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows={5}
+                placeholder="分享您的体验..."
+                maxLength={500}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1 text-right">
+                {comment.length}/500
+              </p>
+            </div>
+
+            {/* 提示信息 */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-700">
+                💡 优质的评价可以帮助其他用户做出更好的选择
+              </p>
+            </div>
+          </div>
+        </form>
+
+        {/* 底部按钮 */}
+        <div className="p-6 border-t bg-gray-50">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl px-4 py-2 text-gray-600 hover:bg-gray-100"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
             >
               取消
             </button>
             <button
-              type="submit"
-              className="rounded-xl bg-orange-500 px-5 py-2 font-medium text-white hover:bg-orange-600 disabled:opacity-60"
-              disabled={rating === 0 || !comment.trim()} // 示例：强制至少选总体评分
+              onClick={handleSubmit}
+              disabled={loading || !comment.trim()}
+              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              提交
+              {loading ? '提交中...' : '提交评价'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
 };
-
-/** 单行星级评分（5 颗星） */
-function RatingRow({
-  label,
-  value,
-  onChange,
-  rightText,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  rightText?: string;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="w-16 shrink-0 text-base font-medium">{label}</div>
-      <div className="flex items-center gap-2">
-        <StarGroup value={value} onChange={onChange} />
-      </div>
-      <div className="w-28 text-right text-sm text-gray-700">{rightText}</div>
-    </div>
-  );
-}
-
-function StarGroup({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  return (
-    <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <button
-          key={i}
-          type="button"
-          className="group rounded p-1 focus:outline-none focus:ring-2 focus:ring-orange-400"
-          onClick={() => onChange(i)}
-          aria-label={`评分 ${i} 星`}
-        >
-          <Star filled={i <= value} />
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Star({ filled }: { filled: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={`h-7 w-7 ${filled ? 'fill-yellow-400 stroke-yellow-400' : 'fill-gray-200 stroke-gray-300'}`}
-      strokeWidth="1.5"
-    >
-      <path d="M12 2.5l2.9 6 6.6.9-4.8 4.7 1.1 6.6L12 17.8 6.2 20.7l1.1-6.6L2.5 9.4l6.6-.9L12 2.5z" />
-    </svg>
-  );
-}
 
 export default ReviewModal;

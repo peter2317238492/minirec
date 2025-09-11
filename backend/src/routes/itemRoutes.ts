@@ -1,16 +1,66 @@
 // backend/src/routes/itemRoutes.ts
 import express from 'express';
+import Item from '../models/Item';
 import { itemController } from '../controllers/itemController';
 import { authMiddleware } from '../middleware/auth';
 
-
 const router = express.Router();
 
-router.get('/', itemController.getAllItems);
+// 防止用户输入 . * + ? 等触发“全匹配”
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * GET /api/items
+ * 支持：
+ *  - ?category=all | attraction | food | hotel
+ *  - ?search=关键词（按 name/description 模糊匹配，不区分大小写）
+ * 返回按 rating / purchaseCount 倒序
+ */
+router.get('/', async (req, res) => {
+  try {
+    const category =
+      typeof req.query.category === 'string' ? req.query.category.trim() : '';
+    const search =
+      typeof req.query.search === 'string' ? req.query.search.trim() : '';
+
+    const filter: any = {};
+
+    if (category && category !== 'all') {
+      filter.category = category;
+    }
+
+    if (search) {
+      const q = escapeRegex(search);
+      filter.$or = [
+        { name: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } },
+        // 如需扩展可放开下面这行：
+        // { 'location.city': { $regex: q, $options: 'i' } },
+        // { tags: { $elemMatch: { $regex: q, $options: 'i' } } },
+      ];
+    }
+
+    console.log('--- [/api/items] 最终过滤条件:', JSON.stringify(filter));
+    const count = await Item.countDocuments(filter);
+    console.log('--- 预计数量(CountDocuments):', count);
+
+    const items = await Item.find(filter)
+      .sort({ rating: -1, purchaseCount: -1 })
+      .lean();
+
+    res.json(items);
+  } catch (err) {
+    console.error('查询 items 失败:', err);
+    res.status(500).json({ message: '查询失败', error: err });
+  }
+});
+
+// 其他 items 相关接口仍走 controller（不会与上面冲突）
 router.get('/:id', itemController.getItemById);
 router.post('/', authMiddleware, itemController.createItem);
-//router.post('/:id/reviews', authMiddleware, itemController.addReview);
-router.post('/:id/reviews', itemController.addReview);   // 双写入口
-router.get('/:id/reviews', itemController.listReviews);  // 分页读取
+
+// 评价接口
+router.post('/:id/reviews', itemController.addReview);   // 提交评论
+router.get('/:id/reviews', itemController.listReviews);  // 评论分页
 
 export default router;

@@ -1,474 +1,27 @@
+// frontend/src/App.tsx - 简化后的主文件
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './index.css';
+
+// 导入组件
 import SearchBar from './components/SearchBar';
 import ReviewModal from './components/ReviewModal';
 import ImageGallery from './components/ImageGallery';
-// 配置axios默认设置
+import ItemCard from './components/ItemCard';
+import ItemDetail from './components/ItemDetail';
+import LoginModal from './components/LoginModal';
+import PreferencesModal from './components/PreferencesModal';
+import StarRating from './components/StarRating';
+
+// 导入类型和服务
+import { Item, User } from './types';
+import { apiService } from './services/api';
+
+// 配置axios
 axios.defaults.baseURL = 'http://localhost:5000';
 
-// Types
-interface Item {
-  _id: string;
-  category: 'attraction' | 'food' | 'hotel';
-  name: string;
-  description: string;
-  images: string[];
-  price: number;
-  rating: number;
-  purchaseCount?: number;
-  location: {
-    city: string;
-    address: string;
-  };
-  tags: string[];
-  reviews: Review[];
-}
-
-interface Review {
-  userId: string;
-  userName: string;
-  rating: number;
-  comment: string;
-  date: string;
-}
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  preferences?: {
-    categories: string[];
-    tags: string[];
-  };
-}
-
-// Components
-const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
-  return (
-    <div className="flex items-center">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <svg
-          key={star}
-          className={`w-4 h-4 ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
-      ))}
-      <span className="ml-2 text-sm text-gray-600">{rating.toFixed(1)}</span>
-    </div>
-  );
-};
-
-const ItemCard: React.FC<{ item: Item; onClick: () => void }> = ({ item, onClick }) => {
-  const categoryColors = {
-    attraction: 'bg-blue-100 text-blue-800',
-    food: 'bg-green-100 text-green-800',
-    hotel: 'bg-purple-100 text-purple-800'
-  };
-
-  const categoryLabels = {
-    attraction: '景点',
-    food: '美食',
-    hotel: '酒店'
-  };
-
-    // 格式化购买人数显示
-  const formatPurchaseCount = (count: number = 0) => {
-    if (count >= 10000) {
-      return `${(count / 10000).toFixed(1)}万+`;
-    } else if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}k+`;
-    }
-    return count.toString();
-  };
-
-  return (
-    <div 
-      className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
-      onClick={onClick}
-    >
-      <div className="h-48 bg-gray-200 relative">
-        <img
-        src={item.images?.[0] || 'https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?w=400&q=80'}
-        alt={item.name}
-        className="w-full h-full object-cover"
-        onError={(e)=>{
-          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?w=400&q=80';
-        }}
-        loading="lazy"
-        />
-        <span className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold ${categoryColors[item.category]}`}>
-          {categoryLabels[item.category]}
-        </span>
-        
-        {item.purchaseCount && item.purchaseCount >100 && (
-          <span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white rounded text-xs font-semibold">
-            🔥 热门
-          </span>
-        )}
-      </div>
-
-      <div className="p-4">
-        <h3 className="text-lg font-semibold mb-2">{item.name}</h3>
-        <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
-        <div className="flex items-center justify-between mb-2">
-          <StarRating rating={item.rating} />
-          <span className="text-lg font-bold text-red-500">¥{item.price}</span>
-        </div>
-
-
-        
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <div className="flex items-center">
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            {item.location.city}
-          </div>
-
-          <div className="flex items-center text-orange-500">
-            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-            </svg>
-            <span className="font-medium">{formatPurchaseCount(item.purchaseCount)}人购买</span>
-          </div>
-        </div>
-        
-
-
-        <div className="flex flex-wrap gap-1 mt-2">
-          {item.tags.slice(0, 3).map(tag => (
-            <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ItemDetail: React.FC<{ item: Item; onBack: () => void; onPurchase: () => void; onReview: () => void }> = ({ item, onBack, onPurchase, onReview }) => {
-  return (
-    <div className="max-w-4xl mx-auto">
-      <button 
-        onClick={onBack}
-        className="mb-4 flex items-center text-blue-600 hover:text-blue-800"
-      >
-        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        返回列表
-      </button>
-
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <ImageGallery images={item.images} title={item.name} />
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{item.name}</h1>
-              <div className="flex items-center gap-4">
-               <StarRating rating={item.rating} />
-               <span className="text-sm text-orange-500">
-                  <svg className="w-5 h-5 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
-                   <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                  </svg>
-                  {item.purchaseCount || 0}人已购买
-               </span>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-red-500">¥{item.price}</p>
-              <button 
-                onClick={onPurchase}
-                className="w-32 mt-2 bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 transition-colors"
-              >
-                立即购买
-              </button>
-            </div>
-          </div>
-
-          {/* 新增评分评论按钮 */}
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={onReview}
-              className="w-32 bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 transition-colors"
-            >
-              评分/评论
-            </button>
-          </div>
-
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">简介</h2>
-            <p className="text-gray-700">{item.description}</p>
-          </div>
-          
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">位置信息</h2>
-            <p className="text-gray-700">
-              <span className="font-medium">城市：</span>{item.location.city}<br />
-              <span className="font-medium">地址：</span>{item.location.address}
-            </p>
-          </div>
-          
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">标签</h2>
-            <div className="flex flex-wrap gap-2">
-              {item.tags.map(tag => (
-                <span key={tag} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-          
-          <div>
-            <h2 className="text-xl font-semibold mb-4">用户评价 ({item.reviews.length})</h2>
-            {item.reviews.length > 0 ? (
-              <div className="space-y-4">
-                {item.reviews.map((review, index) => (
-                  <div key={index} className="border-b pb-4">
-                    <div className="flex items-center mb-2">
-                      <span className="font-medium mr-2">{review.userName}</span>
-                      <StarRating rating={review.rating} />
-                      <span className="text-sm text-gray-500 ml-auto">
-                        {new Date(review.date).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-gray-700">{review.comment}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">暂无评价</p>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const LoginModal: React.FC<{ 
-  isOpen: boolean; 
-  onClose: () => void; 
-  onLogin: (user: User, token: string) => void 
-  isRegister: boolean;
-  setIsRegister: React.Dispatch<React.SetStateAction<boolean>>;
-}> = ({ isOpen, onClose, onLogin, isRegister, setIsRegister }) => {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: ''
-  });
-  const [error, setError] = useState('');
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    
-    try {
-      const endpoint = isRegister ? '/api/users/register' : '/api/users/login';
-      const response = await axios.post(endpoint, formData);
-      
-      if (response.data.token) {
-        onLogin(response.data.user, response.data.token);
-        onClose();
-        setFormData({ username: '', email: '', password: '' });
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || '操作失败，请重试');
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96 relative">
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-        >
-          ✕
-        </button>
-        
-        <h2 className="text-2xl font-bold mb-4">{isRegister ? '注册' : '登录'}</h2>
-        
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
-            {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="用户名"
-            className="w-full p-2 border rounded mb-3"
-            value={formData.username}
-            onChange={(e) => setFormData({...formData, username: e.target.value})}
-            required
-          />
-          {isRegister && (
-            <input
-              type="email"
-              placeholder="邮箱"
-              className="w-full p-2 border rounded mb-3"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              required
-            />
-          )}
-          <input
-            type="password"
-            placeholder="密码"
-            className="w-full p-2 border rounded mb-3"
-            value={formData.password}
-            onChange={(e) => setFormData({...formData, password: e.target.value})}
-            required
-          />
-          <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-            {isRegister ? '注册' : '登录'}
-          </button>
-        </form>
-        
-        <p className="text-center mt-4 text-sm">
-          {isRegister ? '已有账号？' : '没有账号？'}
-          <button 
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setError('');
-            }}
-            className="text-blue-500 hover:underline ml-1"
-          >
-            {isRegister ? '立即登录' : '立即注册'}
-          </button>
-        </p>
-      </div>
-    </div>
-  );
-};
-
-const PreferencesModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (preferences: any) => void;
-  currentPreferences?: any;
-  userId: string;
-  token: string;
-}> = ({ isOpen, onClose, onSave, currentPreferences, userId, token }) => {
-  const [preferences, setPreferences] = useState({
-    categories: currentPreferences?.categories || [],
-    tags: currentPreferences?.tags || []
-  });
-
-  if (!isOpen) return null;
-
-  const allCategories = [
-    { value: 'attraction', label: '景点' },
-    { value: 'food', label: '美食' },
-    { value: 'hotel', label: '酒店' }
-  ];
-
-  const allTags = ['历史', '文化', '自然', '购物', '娱乐', '亲子', '情侣', '商务', '经济', '豪华'];
-
-  const toggleCategory = (category: string) => {
-    setPreferences(prev => ({
-      ...prev,
-      categories: prev.categories.includes(category)
-        ? prev.categories.filter((c: string) => c !== category)
-        : [...prev.categories, category]
-    }));
-  };
-
-  const toggleTag = (tag: string) => {
-    setPreferences(prev => ({
-      ...prev,
-      tags: prev.tags.includes(tag)
-        ? prev.tags.filter((t: string) => t !== tag)
-        : [...prev.tags, tag]
-    }));
-  };
-
-  const handleSave = async () => {
-    try {
-      await axios.put(`/api/users/${userId}/preferences`, preferences, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      onSave(preferences);
-      onClose();
-    } catch (error) {
-      console.error('保存偏好失败:', error);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96 max-h-[80vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-4">设置偏好</h2>
-        
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2">选择感兴趣的类别</h3>
-          <div className="space-y-2">
-            {allCategories.map(cat => (
-              <label key={cat.value} className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={preferences.categories.includes(cat.value)}
-                  onChange={() => toggleCategory(cat.value)}
-                  className="mr-2"
-                />
-                {cat.label}
-              </label>
-            ))}
-          </div>
-        </div>
-        
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2">选择感兴趣的标签</h3>
-          <div className="flex flex-wrap gap-2">
-            {allTags.map(tag => (
-              <button
-                key={tag}
-                onClick={() => toggleTag(tag)}
-                className={`px-3 py-1 rounded-full text-sm ${
-                  preferences.tags.includes(tag)
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700'
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        <div className="flex justify-end gap-2">
-          <button 
-            onClick={onClose}
-            className="px-4 py-2 border rounded hover:bg-gray-100"
-          >
-            取消
-          </button>
-          <button 
-            onClick={handleSave}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            保存
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Main App Component
 function App() {
+  // 状态管理
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -482,8 +35,8 @@ function App() {
   const [isRegister, setIsRegister] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
-    useEffect(() => {
-    // 检查本地存储的登录信息
+  // 初始化
+  useEffect(() => {
     const savedUser = localStorage.getItem('user');
     const savedToken = localStorage.getItem('token');
     if (savedUser && savedToken) {
@@ -494,44 +47,81 @@ function App() {
     loadItems();
   }, []);
 
+  // 监听类别和搜索变化
   useEffect(() => {
     loadItems();
-  }, [selectedCategory,searchQuery]);
+  }, [selectedCategory, searchQuery]);
 
+  // 监听用户登录状态
   useEffect(() => {
     if (user && token) {
       loadRecommendations();
     }
   }, [user, token]);
 
-  const loadItems = async () => {
-    setLoading(true);
-    try {
-      const params: any = {};
-      if (selectedCategory !== 'all') params.category = selectedCategory;
-      if (searchQuery) params.search = searchQuery;
+const loadItems = async () => {
+  setLoading(true);
+  console.log('====== 前端loadItems开始 ======');
+  console.log('当前状态 - selectedCategory:', selectedCategory);
+  console.log('当前状态 - searchQuery:', searchQuery, 'type:', typeof searchQuery);
+  
+  try {
+    const params: any = {};
     
-      const response = await axios.get('/api/items', { params });
-      setItems(response.data);
-    } catch (error) {
-      console.error('加载项目失败:', error);
-    } finally {
-      setLoading(false);
+    // 处理类别筛选
+    if (selectedCategory !== 'all') {
+      params.category = selectedCategory;
+      console.log('添加category参数:', selectedCategory);
     }
-  };
+    
+    // 处理搜索查询
+    if (searchQuery && searchQuery.trim() !== '') {
+      params.search = searchQuery.trim();
+      console.log('添加search参数:', params.search);
+    }
+    
+    console.log('最终请求参数:', params);
+    console.log('请求URL将是:', '/api/items', params);
+    
+    const response = await axios.get('/api/items', { params });
+    console.log('响应数据长度:', response.data.length);
+    
+    if (response.data.length > 0) {
+      console.log('第一个结果:', response.data[0].name);
+    }
+    
+    setItems(response.data);
+    console.log('====== 前端loadItems结束 ======\n');
+  } catch (error) {
+    console.error('加载项目失败:', error);
+    setItems([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
+  // 加载推荐
   const loadRecommendations = async () => {
     if (!user || !token) return;
     try {
-      const response = await axios.get(`/api/recommendations/${user.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRecommendations(response.data);
+      const data = await apiService.getRecommendations(user.id, token);
+      setRecommendations(data);
     } catch (error) {
       console.error('加载推荐失败:', error);
     }
   };
 
+  // 获取项目详情
+  const fetchItemById = async (id: string) => {
+    try {
+      const data = await apiService.getItemById(id);
+      setSelectedItem(data);
+    } catch (error) {
+      console.error('获取项目详情失败:', error);
+    }
+  };
+
+  // 处理登录
   const handleLogin = (loggedInUser: User, authToken: string) => {
     setUser(loggedInUser);
     setToken(authToken);
@@ -540,6 +130,7 @@ function App() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
   };
 
+  // 处理登出
   const handleLogout = () => {
     setUser(null);
     setToken('');
@@ -549,29 +140,64 @@ function App() {
     setRecommendations([]);
   };
 
+  // 处理购买
   const handlePurchase = async () => {
     if (!user) {
       setShowLoginModal(true);
       return;
     }
-    
+  
     if (selectedItem) {
       try {
-        await axios.post(`/api/users/${user.id}/purchase`, {
+        console.log('发起购买请求:', {
+          userId: user.id,
           itemId: selectedItem._id,
           itemName: selectedItem.name,
           category: selectedItem.category,
           price: selectedItem.price
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
         });
-        alert('购买成功！即将跳转到支付页面...');
-      } catch (error) {
-        console.error('记录购买失败:', error);
+      
+        const response = await axios.post(
+          `/api/users/${user.id}/purchase`,
+          {
+            itemId: selectedItem._id,
+            itemName: selectedItem.name,
+            category: selectedItem.category,
+            price: selectedItem.price
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+              }
+            }
+          );
+
+        console.log('购买响应:', response.data);
+      
+        if (response.data.success) {
+          alert('购买成功！即将跳转到支付页面...');
+          // 重新加载项目以更新购买人数
+          await fetchItemById(selectedItem._id);
+          loadItems();
+        }
+      } catch (error: any) {
+        console.error('购买失败 - 详细错误:', error.response || error);
+      
+        // 更详细的错误提示
+        if (error.response?.status === 401) {
+          alert('登录已过期，请重新登录');
+          handleLogout();
+        } else if (error.response?.status === 404) {
+          alert('用户信息错误，请重新登录');
+        } else {
+          alert(error.response?.data?.message || '购买失败，请重试');
+        }
       }
     }
   };
 
+  // 处理偏好保存
   const handleSavePreferences = (preferences: any) => {
     if (user) {
       setUser({ ...user, preferences });
@@ -579,41 +205,47 @@ function App() {
     }
   };
 
-    // 提交评分评论
-  const handleReviewSubmit = async (payload: {
-    rating: number;
-    taste: number;
-    packaging: number;
-    comment: string;
-  }) => {
+  // 处理评论提交
+  const handleReviewSubmit = async (payload: any) => {
     if (!selectedItem || !user) return;
     try {
-      await axios.post(`/api/items/${selectedItem._id}/reviews`, {
-        itemId: selectedItem._id, 
+      await apiService.addReview(selectedItem._id, {
         userId: user.id,
         userName: user.username,
-        ...payload,
-        date: new Date().toISOString()
+        ...payload
       });
       
-       // ★ 关键：提交成功后重新获取详情（带最新 reviews）
+      // 重新获取详情以更新评论
       await fetchItemById(selectedItem._id);
-
       setShowReviewModal(false);
-      // 可选：刷新详情页或评论列表
-    } catch (err) {
-      console.error('提交评论失败', err);
-      // 可选：弹窗提示
+      alert('评论提交成功！');
+    } catch (error) {
+      console.error('提交评论失败', error);
+      alert('评论提交失败，请重试');
     }
   };
 
-    const fetchItemById = async (id: string) => {
-    try {
-      const { data } = await axios.get(`/api/items/${id}`);
-      setSelectedItem(data);            // 关键：用最新详情覆盖
-    } catch (e) {
-      console.error('获取项目详情失败:', e);
-    }
+const handleSearch = (query: string) => {
+  console.log('====== handleSearch被调用 ======');
+  console.log('接收到的搜索词:', query);
+  console.log('搜索词类型:', typeof query);
+  console.log('搜索词长度:', query.length);
+  
+  setSearchQuery(query);
+  
+  // 确保搜索时显示所有类别的结果
+  if (query && query.trim() !== '') {
+    console.log('有搜索词，切换到全部类别');
+    setSelectedCategory('all');
+  }
+  
+  console.log('更新后的searchQuery将是:', query);
+  console.log('====== handleSearch结束 ======\n');
+};
+
+  // 清除搜索
+  const clearSearch = () => {
+    setSearchQuery('');
   };
 
   return (
@@ -642,7 +274,7 @@ function App() {
             ) : (
               <button 
                 onClick={() => {
-                  setIsRegister(false); // 每次打开都重置为登录
+                  setIsRegister(false);
                   setShowLoginModal(true);
                 }}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -666,7 +298,13 @@ function App() {
             ].map(cat => (
               <button
                 key={cat.value}
-                onClick={() => setSelectedCategory(cat.value)}
+                onClick={() => {
+                  setSelectedCategory(cat.value);
+                  // 切换类别时清除搜索
+                  if (searchQuery) {
+                    setSearchQuery('');
+                  }
+                }}
                 className={`py-3 px-2 border-b-2 transition-colors ${
                   selectedCategory === cat.value
                     ? 'border-blue-500 text-blue-600'
@@ -680,16 +318,34 @@ function App() {
         </div>
       </div>
       
+      {/* Search Bar */}
       {!selectedItem && (
-      <div className="bg-white py-6">
-        <div className="container mx-auto px-4">
-          <SearchBar 
-            onSearch={(query:string) => setSearchQuery(query)}
-            placeholder="搜索景点、美食、酒店..."
-          />
+        <div className="bg-white py-6">
+          <div className="container mx-auto px-4">
+            <SearchBar 
+              onSearch={handleSearch}
+              placeholder="搜索景点、美食、酒店..."
+            />
+            
+            {/* 搜索结果提示 */}
+            {searchQuery && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-gray-600">
+                  {items.length > 0 
+                    ? `搜索 "${searchQuery}" 找到 ${items.length} 个结果`
+                    : `搜索 "${searchQuery}" 没有找到结果`}
+                </p>
+                <button 
+                  onClick={clearSearch}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  清除搜索
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-     )}
+      )}
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
@@ -703,7 +359,7 @@ function App() {
         ) : (
           <>
             {/* Recommendations Section */}
-            {user && recommendations.length > 0 && (
+            {user && recommendations.length > 0 && !searchQuery && (
               <div className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">为您推荐</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -711,7 +367,7 @@ function App() {
                     <ItemCard 
                       key={item._id} 
                       item={item} 
-                       onClick={() => fetchItemById(item._id)}
+                      onClick={() => fetchItemById(item._id)}
                     />
                   ))}
                 </div>
@@ -720,18 +376,20 @@ function App() {
 
             {/* All Items */}
             <div>
-              <h2 className="text-2xl font-bold mb-4">
-                {selectedCategory === 'all' ? '全部推荐' : 
-                 selectedCategory === 'attraction' ? '景点推荐' :
-                 selectedCategory === 'food' ? '美食推荐' : '酒店推荐'}
-              </h2>
+              {!searchQuery && (
+                <h2 className="text-2xl font-bold mb-4">
+                  {selectedCategory === 'all' ? '全部推荐' : 
+                   selectedCategory === 'attraction' ? '景点推荐' :
+                   selectedCategory === 'food' ? '美食推荐' : '酒店推荐'}
+                </h2>
+              )}
               
               {loading ? (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                   <p className="mt-2 text-gray-600">加载中...</p>
                 </div>
-              ) : (
+              ) : items.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {items.map(item => (
                     <ItemCard 
@@ -740,6 +398,16 @@ function App() {
                       onClick={() => fetchItemById(item._id)}
                     />
                   ))}
+                </div>
+              ) : (
+                <div className="text-center py-16 text-gray-500">
+                  <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p>暂无数据</p>
+                  {searchQuery && (
+                    <p className="mt-2 text-sm">试试其他搜索词或清除搜索</p>
+                  )}
                 </div>
               )}
             </div>
@@ -757,25 +425,26 @@ function App() {
       />
       
       {user && (
-        <PreferencesModal
-          isOpen={showPreferencesModal}
-          onClose={() => setShowPreferencesModal(false)}
-          onSave={handleSavePreferences}
-          currentPreferences={user.preferences}
-          userId={user.id}
-          token={token}
-        />
+        <>
+          <PreferencesModal
+            isOpen={showPreferencesModal}
+            onClose={() => setShowPreferencesModal(false)}
+            onSave={handleSavePreferences}
+            currentPreferences={user?.preferences}
+            userId={user.id}
+            token={token}
+          />
+          
+          <ReviewModal
+            isOpen={showReviewModal}
+            onClose={() => setShowReviewModal(false)}
+            item={selectedItem}
+            user={user}
+            onSubmit={handleReviewSubmit}
+            category={selectedItem?.category as 'food' | 'hotel' | 'attraction'}
+          />
+        </>
       )}
-
-      {/* 评分评论弹窗，直接加在这里 */}
-      <ReviewModal
-        isOpen={showReviewModal}
-        onClose={() => setShowReviewModal(false)}
-        item={selectedItem}
-        user={user}
-        onSubmit={handleReviewSubmit}
-        category={selectedItem?.category as 'food' | 'hotel' | 'attraction'}
-      />
     </div>
   );
 }

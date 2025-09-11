@@ -1,6 +1,8 @@
 // frontend/src/components/SearchBar.tsx
 import React, { useState } from 'react';
 
+const hotTags = ['故宫', '烤鸭', '长城', '火锅', '希尔顿', '四季', '全聚德', '科技馆'];
+
 interface SearchBarProps {
   onSearch: (query: string) => void;
   placeholder?: string;
@@ -53,19 +55,19 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, placeholder = "搜索�
       {/* 热门搜索标签 */}
       <div className="mt-3 flex flex-wrap gap-2">
         <span className="text-sm text-gray-600">热门搜索：</span>
-        {['故宫', '烤鸭', '长城', '火锅', '五星级'].map(tag => (
+        {hotTags.map(tag => (
           <button
             key={tag}
             type="button"
             onClick={() => {
-              setSearchQuery(tag);
-              onSearch(tag);
+            setSearchQuery(tag);
+            onSearch(tag);
             }}
             className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
           >
             {tag}
           </button>
-        ))}
+       ))}
       </div>
     </form>
   );
