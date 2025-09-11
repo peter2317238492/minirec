@@ -18,7 +18,7 @@ import { Item, User } from './types';
 import { apiService } from './services/api';
 
 // 配置axios
-axios.defaults.baseURL = 'minirec-production.up.railway.app';
+axios.defaults.baseURL = 'minirec-production.up.railway.app:8080';
 
 function App() {
   // 状态管理
