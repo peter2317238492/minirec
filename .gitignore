@@ -21,11 +21,12 @@ logs/
 # 前端构建
 frontend/build/
 frontend/dist/
+frontend/node_modules/
 
 # 后端构建
 backend/dist/
 backend/build/
-
+backend/node_modules/
 # Python
 __pycache__/
 *.pyc
