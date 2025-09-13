@@ -1,5 +1,6 @@
 // frontend/src/components/LoginModal.tsx
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { User } from '../types';
 
@@ -109,39 +110,86 @@ const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md relative animate-fadeIn">
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div 
+              className="bg-white rounded-lg w-full max-w-md relative"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 400 }}
+            >
         {/* 关闭按钮 */}
-        <button 
+        <motion.button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          whileHover={{ scale: 1.1, rotate: 90 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </motion.button>
         
         {/* 模态框内容 */}
         <div className="p-6">
           {/* 标题 */}
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
+          <motion.div 
+            className="text-center mb-6"
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <motion.h2 
+              className="text-2xl font-bold text-gray-800"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 400, damping: 10 }}
+            >
               {isRegister ? '创建新账号' : '欢迎回来'}
-            </h2>
-            <p className="text-gray-500 text-sm mt-2">
+            </motion.h2>
+            <motion.p 
+              className="text-gray-500 text-sm mt-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
               {isRegister ? '注册以享受个性化推荐服务' : '登录到您的账号'}
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
           
           {/* 错误提示 */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {error}
-            </div>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.div 
+                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 flex items-center"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.svg 
+                  className="w-5 h-5 mr-2" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 0.5, repeat: 1 }}
+                >
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </motion.svg>
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
           
           {/* 表单 */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -211,10 +259,13 @@ const LoginModal: React.FC<LoginModalProps> = ({
             )}
             
             {/* 提交按钮 */}
-            <button 
+            <motion.button 
               type="submit" 
-              className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-500 text-white py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -227,24 +278,32 @@ const LoginModal: React.FC<LoginModalProps> = ({
               ) : (
                 isRegister ? '注册' : '登录'
               )}
-            </button>
+            </motion.button>
           </form>
           
           {/* 切换登录/注册 */}
-          <div className="mt-6 text-center">
+          <motion.div 
+            className="mt-6 text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
             <p className="text-sm text-gray-600">
               {isRegister ? '已有账号？' : '还没有账号？'}
-              <button 
+              <motion.button 
                 onClick={() => {
                   setIsRegister(!isRegister);
                   setError('');
                 }}
                 className="text-blue-500 hover:text-blue-600 ml-1 font-medium"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 {isRegister ? '立即登录' : '立即注册'}
-              </button>
+              </motion.button>
             </p>
-          </div>
+          </motion.div>
           
           {/* 测试账号提示（仅登录时显示） */}
           {!isRegister && (
@@ -255,8 +314,11 @@ const LoginModal: React.FC<LoginModalProps> = ({
             </div>
           )}
         </div>
-      </div>
-    </div>
+            </motion.div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
 

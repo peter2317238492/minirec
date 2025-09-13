@@ -1,5 +1,6 @@
 // frontend/src/App.tsx - 简化后的主文件
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import './index.css';
 
@@ -249,52 +250,116 @@ const handleSearch = (query: string) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <motion.div 
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-md sticky top-0 z-50">
+      <motion.header 
+        className="bg-white/80 backdrop-blur-sm shadow-md sticky top-0 z-50"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <motion.h1 
+            className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+          >
             智能推荐系统
-          </h1>
-          <div className="flex items-center gap-4">
-            {user ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                    {user.username[0].toUpperCase()}
-                  </div>
-                  <span className="text-gray-700 font-medium">欢迎, {user.username}</span>
-                </div>
-                <button 
-                  onClick={() => setShowPreferencesModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+          </motion.h1>
+          <motion.div 
+            className="flex items-center gap-4"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, type: "spring", stiffness: 300, damping: 20 }}
+          >
+            <AnimatePresence mode="wait">
+              {user ? (
+                <motion.div 
+                  key="user-logged-in"
+                  className="flex items-center gap-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  设置偏好
-                </button>
-                <button 
-                  onClick={handleLogout}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  <motion.div 
+                    className="flex items-center gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <motion.div 
+                      className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      {user.username[0].toUpperCase()}
+                    </motion.div>
+                    <span className="text-gray-700 font-medium">欢迎, {user.username}</span>
+                  </motion.div>
+                  <motion.button 
+                    onClick={() => setShowPreferencesModal(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md"
+                    whileHover={{ 
+                      scale: 1.05,
+                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    设置偏好
+                  </motion.button>
+                  <motion.button 
+                    onClick={handleLogout}
+                    className="px-4 py-2 border border-gray-300 rounded-lg"
+                    whileHover={{ 
+                      scale: 1.05,
+                      backgroundColor: "#f9fafb"
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    退出
+                  </motion.button>
+                </motion.div>
+              ) : (
+                <motion.button
+                  key="login-button"
+                  onClick={() => {
+                    setIsRegister(false);
+                    setShowLoginModal(true);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg shadow-md"
+                  whileHover={{ 
+                    scale: 1.05,
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
-                  退出
-                </button>
-              </>
-            ) : (
-              <button 
-                onClick={() => {
-                  setIsRegister(false);
-                  setShowLoginModal(true);
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all shadow-md hover:shadow-lg"
-              >
-                登录/注册
-              </button>
-            )}
-          </div>
+                  登录/注册
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Category Tabs */}
-      <div className="bg-white border-b">
+      <motion.div 
+        className="bg-white border-b"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 20 }}
+      >
         <div className="container mx-auto px-4">
           <div className="flex space-x-1 py-2">
             {[
@@ -302,8 +367,8 @@ const handleSearch = (query: string) => {
               { value: 'attraction', label: '景点推荐' },
               { value: 'food', label: '美食推荐' },
               { value: 'hotel', label: '酒店推荐' }
-            ].map(cat => (
-              <button
+            ].map((cat, index) => (
+              <motion.button
                 key={cat.value}
                 onClick={() => {
                   setSelectedCategory(cat.value);
@@ -312,18 +377,31 @@ const handleSearch = (query: string) => {
                     setSearchQuery('');
                   }
                 }}
-                className={`px-5 py-2 rounded-lg mx-1 transition-all duration-300 ${
+                className={`px-5 py-2 rounded-lg mx-1 ${
                   selectedCategory === cat.value
                     ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
+                whileHover={{ 
+                  scale: 1.05,
+                  y: -2
+                }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  delay: 0.1 * index, 
+                  type: "spring", 
+                  stiffness: 300, 
+                  damping: 20 
+                }}
               >
                 {cat.label}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
       
       {/* Search Bar */}
       {!selectedItem && (
@@ -355,82 +433,211 @@ const handleSearch = (query: string) => {
       )}
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {selectedItem ? (
-          <ItemDetail 
-            item={selectedItem} 
-            onBack={() => setSelectedItem(null)}
-            onPurchase={handlePurchase}
-            onReview={() => setShowReviewModal(true)}
-          />
-        ) : (
-          <>
+      <motion.main 
+        className="container mx-auto px-4 py-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.5 }}
+      >
+        <AnimatePresence mode="wait">
+          {selectedItem ? (
+            <motion.div
+              key="item-detail"
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -100 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <ItemDetail 
+                item={selectedItem} 
+                onBack={() => setSelectedItem(null)}
+                onPurchase={handlePurchase}
+                onReview={() => setShowReviewModal(true)}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="item-list"
+              initial={{ opacity: 0, x: -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 100 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <>
             {/* Recommendations Section */}
-            {user && recommendations.length > 0 && !searchQuery && (
-              <div className="mb-12 fade-in-up">
-                <div className="flex items-center mb-6">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    为您推荐
-                  </h2>
-                  <div className="ml-3 w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {recommendations.slice(0, 4).map((item, index) => (
-                    <div key={item._id} className="fade-in-up" style={{animationDelay: `${index * 0.1}s`}}>
-                      <ItemCard 
-                        item={item} 
-                        onClick={() => fetchItemById(item._id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {user && recommendations.length > 0 && !searchQuery && (
+                <motion.div 
+                  className="mb-12"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                >
+                  <motion.div 
+                    className="flex items-center mb-6"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3, duration: 0.5 }}
+                  >
+                    <motion.h2 
+                      className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      为您推荐
+                    </motion.h2>
+                    <motion.div 
+                      className="ml-3 w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: 48 }}
+                      transition={{ delay: 0.5, duration: 0.5 }}
+                    ></motion.div>
+                  </motion.div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {recommendations.slice(0, 4).map((item, index) => (
+                      <motion.div 
+                        key={item._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 * index, duration: 0.5 }}
+                        whileHover={{ y: -10 }}
+                      >
+                        <ItemCard 
+                          item={item} 
+                          onClick={() => fetchItemById(item._id)}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* All Items */}
-            <div className="bg-white rounded-2xl shadow-sm p-6 fade-in">
+            <motion.div 
+              className="bg-white rounded-2xl shadow-sm p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
               {!searchQuery && (
-                <div className="flex items-center mb-6">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                <motion.div 
+                  className="flex items-center mb-6"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                >
+                  <motion.h2 
+                    className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
                     {selectedCategory === 'all' ? '全部推荐' : 
                      selectedCategory === 'attraction' ? '景点推荐' :
                      selectedCategory === 'food' ? '美食推荐' : '酒店推荐'}
-                  </h2>
-                  <div className="ml-3 w-12 h-1 bg-gradient-to-r from-gray-400 to-gray-300 rounded-full"></div>
-                </div>
+                  </motion.h2>
+                  <motion.div 
+                    className="ml-3 w-12 h-1 bg-gradient-to-r from-gray-400 to-gray-300 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: 48 }}
+                    transition={{ delay: 0.6, duration: 0.5 }}
+                  ></motion.div>
+                </motion.div>
               )}
               
               {loading ? (
-                <div className="text-center py-16">
-                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                  <p className="mt-4 text-gray-600 font-medium">加载中...</p>
-                </div>
+                <motion.div 
+                  className="text-center py-16"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <motion.div 
+                    className="inline-block rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  ></motion.div>
+                  <motion.p 
+                    className="mt-4 text-gray-600 font-medium"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    加载中...
+                  </motion.p>
+                </motion.div>
               ) : items.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {items.map((item, index) => (
-                    <div key={item._id} className="fade-in" style={{animationDelay: `${index * 0.05}s`}}>
-                      <ItemCard 
-                        item={item} 
-                        onClick={() => fetchItemById(item._id)}
-                      />
-                    </div>
-                  ))}
+                  <AnimatePresence>
+                    {items.map((item, index) => (
+                      <motion.div 
+                        key={item._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ delay: 0.05 * index, duration: 0.3 }}
+                        layout
+                      >
+                        <ItemCard 
+                          item={item} 
+                          onClick={() => fetchItemById(item._id)}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
               ) : (
-                <div className="text-center py-16 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100">
-                  <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <motion.div 
+                  className="text-center py-16 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <motion.svg 
+                    className="mx-auto h-16 w-16 text-gray-400 mb-4" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    animate={{ 
+                      scale: [1, 1.1, 1],
+                      rotate: [0, 5, -5, 0]
+                    }}
+                    transition={{ 
+                      duration: 3, 
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-gray-600 font-medium text-lg">暂无数据</p>
+                  </motion.svg>
+                  <motion.p 
+                    className="text-gray-600 font-medium text-lg"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    暂无数据
+                  </motion.p>
                   {searchQuery && (
-                    <p className="mt-2 text-gray-500">试试其他搜索词或清除搜索</p>
+                    <motion.p 
+                      className="mt-2 text-gray-500"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      试试其他搜索词或清除搜索
+                    </motion.p>
                   )}
-                </div>
+                </motion.div>
               )}
-            </div>
+            </motion.div>
           </>
-        )}
-      </main>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.main>
 
       {/* Modals */}
       <LoginModal 
@@ -462,7 +669,7 @@ const handleSearch = (query: string) => {
           />
         </>
       )}
-    </div>
+    </motion.div>
   );
 }
 
