@@ -1,5 +1,6 @@
 // frontend/src/components/ItemDetail.tsx
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Item } from '../types';
 import ImageGallery from './ImageGallery';
 import StarRating from './StarRating';
@@ -13,19 +14,38 @@ interface ItemDetailProps {
 
 const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onReview }) => {
   return (
-    <div className="max-w-4xl mx-auto">
+    <motion.div 
+      className="max-w-4xl mx-auto"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       {/* 返回按钮 */}
-      <button 
+      <motion.button 
         onClick={onBack}
         className="mb-6 flex items-center text-blue-600 hover:text-blue-800 transition-colors group"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
-        <svg className="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <motion.svg 
+          className="w-5 h-5 mr-2" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+          whileHover={{ x: -3 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
+        </motion.svg>
         返回列表
-      </button>
+      </motion.button>
 
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+      <motion.div 
+        className="bg-white rounded-2xl shadow-xl overflow-hidden"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+      >
         {/* 图片画廊 */}
         <ImageGallery images={item.images} title={item.name} />
         
@@ -48,18 +68,30 @@ const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onRev
             <div className="text-right md:ml-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 shadow-sm">
               <p className="text-3xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent mb-4">¥{item.price}</p>
               <div className="flex flex-col gap-3">
-                <button 
+                <motion.button 
                   onClick={onPurchase}
-                  className="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl hover:from-red-600 hover:to-orange-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  className="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl shadow-lg"
+                  whileHover={{ 
+                    scale: 1.05,
+                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
                   立即购买
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   onClick={onReview}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl shadow-md"
+                  whileHover={{ 
+                    scale: 1.05,
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
                   评分/评论
-                </button>
+                </motion.button>
               </div>
             </div>
           </div>
@@ -112,13 +144,21 @@ const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onRev
               标签
             </h2>
             <div className="flex flex-wrap gap-3">
-              {item.tags.map(tag => (
-                <span 
+              {item.tags.map((tag, index) => (
+                <motion.span 
                   key={tag} 
-                  className="px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 rounded-full text-sm font-medium hover:from-blue-200 hover:to-indigo-200 transition-all shadow-sm"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 rounded-full text-sm font-medium shadow-sm"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1 * index, type: "spring", stiffness: 400, damping: 10 }}
+                  whileHover={{ 
+                    scale: 1.1,
+                    background: "linear-gradient(to right, #bfdbfe, #c7d2fe)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {tag}
-                </span>
+                </motion.span>
               ))}
             </div>
           </div>
@@ -134,33 +174,70 @@ const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onRev
             
             {item.reviews.length > 0 ? (
               <div className="space-y-5">
-                {item.reviews.map((review, index) => (
-                  <div key={index} className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-                      <div className="flex items-center gap-4">
-                        {/* 用户头像占位 */}
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
-                          {review.userName[0].toUpperCase()}
+                <AnimatePresence>
+                  {item.reviews.map((review, index) => (
+                    <motion.div 
+                      key={index} 
+                      className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl shadow-sm"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index, duration: 0.3 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      whileHover={{ 
+                        y: -5,
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                      }}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                        <div className="flex items-center gap-4">
+                          {/* 用户头像占位 */}
+                          <motion.div 
+                            className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md"
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                          >
+                            {review.userName[0].toUpperCase()}
+                          </motion.div>
+                          <div>
+                            <p className="font-bold text-gray-900">{review.userName}</p>
+                            <StarRating rating={review.rating} size="sm" />
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-gray-900">{review.userName}</p>
-                          <StarRating rating={review.rating} size="sm" />
-                        </div>
+                        <motion.span 
+                          className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm"
+                          initial={{ scale: 0.8 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.2 + index * 0.1 }}
+                        >
+                          {new Date(review.date).toLocaleDateString('zh-CN')}
+                        </motion.span>
                       </div>
-                      <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm">
-                        {new Date(review.date).toLocaleDateString('zh-CN')}
-                      </span>
-                    </div>
-                    <p className="text-gray-700 leading-relaxed pl-1">{review.comment}</p>
-                  </div>
-                ))}
+                      <motion.p 
+                        className="text-gray-700 leading-relaxed pl-1"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 + index * 0.1 }}
+                      >
+                        {review.comment}
+                      </motion.p>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
                 
                 {/* 加载更多评论按钮（如果评论很多） */}
                 {item.reviews.length > 5 && (
                   <div className="text-center mt-6">
-                    <button className="px-5 py-2 text-blue-600 hover:text-blue-800 bg-blue-50 rounded-full transition-colors font-medium">
+                    <motion.button 
+                      className="px-5 py-2 text-blue-600 hover:text-blue-800 bg-blue-50 rounded-full font-medium"
+                      whileHover={{ 
+                        scale: 1.05,
+                        backgroundColor: "#dbeafe"
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
                       查看更多评论
-                    </button>
+                    </motion.button>
                   </div>
                 )}
               </div>
@@ -171,18 +248,31 @@ const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onRev
                 </svg>
                 <p className="text-gray-600 font-medium text-lg mb-2">暂无评价</p>
                 <p className="text-gray-500 mb-5">成为第一个分享体验的人吧！</p>
-                <button 
+                <motion.button 
                   onClick={onReview}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all shadow-md"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl shadow-md"
+                  whileHover={{ 
+                    scale: 1.05,
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  animate={{ 
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: Infinity,
+                    repeatType: "reverse"
+                  }}
                 >
                   立即评价
-                </button>
+                </motion.button>
               </div>
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

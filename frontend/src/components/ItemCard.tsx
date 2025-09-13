@@ -1,5 +1,6 @@
 // frontend/src/components/ItemCard.tsx
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Item } from '../types';
 import StarRating from './StarRating';
 import { formatPurchaseCount, categoryColors, categoryLabels } from '../utils/helpers';
@@ -11,9 +12,17 @@ interface ItemCardProps {
 
 const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
   return (
-    <div 
-      className="bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+    <motion.div 
+      className="bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer"
       onClick={onClick}
+      whileHover={{ 
+        y: -10,
+        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+      }}
+      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
       <div className="h-48 relative">
         <img
@@ -25,17 +34,38 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
           }}
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+        <motion.div 
+          className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-4"
+          initial={{ opacity: 0 }}
+          whileHover={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           <p className="text-white text-sm line-clamp-2">{item.description}</p>
-        </div>
-        <span className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-semibold shadow-sm ${categoryColors[item.category]}`}>
+        </motion.div>
+        <motion.span 
+          className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-semibold shadow-sm ${categoryColors[item.category]}`}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 400, damping: 10 }}
+        >
           {categoryLabels[item.category]}
-        </span>
+        </motion.span>
         
         {item.purchaseCount && item.purchaseCount > 100 && (
-          <span className="absolute top-3 left-3 px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full text-xs font-semibold shadow-lg animate-pulse">
+          <motion.span 
+            className="absolute top-3 left-3 px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full text-xs font-semibold shadow-lg"
+            animate={{ 
+              scale: [1, 1.05, 1],
+              rotate: [0, 2, -2, 0]
+            }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          >
             🔥 热门
-          </span>
+          </motion.span>
         )}
       </div>
 
@@ -66,14 +96,21 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
         </div>
         
         <div className="flex flex-wrap gap-1.5">
-          {item.tags.slice(0, 3).map(tag => (
-            <span key={tag} className="px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-full text-xs font-medium">
+          {item.tags.slice(0, 3).map((tag, index) => (
+            <motion.span 
+              key={tag} 
+              className="px-2.5 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-full text-xs font-medium"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 + index * 0.1, type: "spring", stiffness: 400, damping: 10 }}
+              whileHover={{ scale: 1.1, backgroundColor: "#dbeafe" }}
+            >
               {tag}
-            </span>
+            </motion.span>
           ))}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
