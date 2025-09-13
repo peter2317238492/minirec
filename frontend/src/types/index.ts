@@ -11,9 +11,11 @@ export interface Item {
   location: {
     city: string;
     address: string;
+    coordinates?: [number, number];
   };
   tags: string[];
   reviews: Review[];
+  distance?: number;
 }
 
 export interface Review {

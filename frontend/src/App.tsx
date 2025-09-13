@@ -17,6 +17,7 @@ import StarRating from './components/StarRating';
 // 导入类型和服务
 import { Item, User } from './types';
 import { apiService } from './services/api';
+import { getUserLocation } from './utils/location';
 
 // 配置axios
 axios.defaults.baseURL = 'https://minirec-production.up.railway.app';
@@ -46,6 +47,11 @@ function App() {
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
     }
     loadItems();
+    
+    // 获取用户位置
+    getUserLocation().catch((error) => {
+      console.log('获取用户位置失败:', error);
+    });
   }, []);
 
   // 监听类别和搜索变化

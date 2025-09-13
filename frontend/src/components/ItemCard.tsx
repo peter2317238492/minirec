@@ -1,9 +1,10 @@
 // frontend/src/components/ItemCard.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Item } from '../types';
 import StarRating from './StarRating';
 import { formatPurchaseCount, categoryColors, categoryLabels } from '../utils/helpers';
+import { calculateDistance, formatDistance } from '../utils/location';
 
 interface ItemCardProps {
   item: Item;
@@ -11,6 +12,21 @@ interface ItemCardProps {
 }
 
 const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
+  const [distance, setDistance] = useState<number | null>(null);
+
+  useEffect(() => {
+    const calculateItemDistance = async () => {
+      try {
+        const dist = await calculateDistance(item);
+        setDistance(dist);
+      } catch (error) {
+        console.log('计算距离失败:', error);
+      }
+    };
+
+    calculateItemDistance();
+  }, [item]);
+
   return (
     <motion.div 
       className="bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer"
@@ -87,11 +103,22 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
             <span className="font-medium">{item.location.city}</span>
           </div>
 
-          <div className="flex items-center text-orange-500">
-            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-            </svg>
-            <span className="font-medium">{formatPurchaseCount(item.purchaseCount)}人购买</span>
+          <div className="flex items-center gap-3">
+            {distance !== null && (
+              <div className="flex items-center text-green-600">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                <span className="font-medium">{formatDistance(distance)}</span>
+              </div>
+            )}
+            
+            <div className="flex items-center text-orange-500">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+              </svg>
+              <span className="font-medium">{formatPurchaseCount(item.purchaseCount)}人购买</span>
+            </div>
           </div>
         </div>
         
