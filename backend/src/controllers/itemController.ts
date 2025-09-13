@@ -57,13 +57,20 @@ export const itemController = {
    */
   async addReview(req: Request, res: Response) {
     const itemId = req.params.id || req.body.itemId;
-    const { userId, userName, rating, taste, packaging, comment, date } = req.body;
+    const { userId, userName, rating, taste, service, environment, comfort, location, scenery, transportation, comment, date } = req.body;
 
 
     // 基本校验
     if (!itemId) return res.status(400).json({ message: '缺少 itemId' });
-    if ([rating, taste, packaging].some(v => typeof v !== 'number' || v < 1 || v > 5)) {
-      return res.status(400).json({ message: '评分必须为 1-5 的数字' });
+    if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: '总体评分必须为 1-5 的数字' });
+    }
+    // 验证可选评分字段
+    const optionalRatings = { taste, service, environment, comfort, location, scenery, transportation };
+    for (const [key, value] of Object.entries(optionalRatings)) {
+      if (value !== undefined && (typeof value !== 'number' || value < 1 || value > 5)) {
+        return res.status(400).json({ message: `${key}评分必须为 1-5 的数字` });
+      }
     }
     if (!userId || !userName) return res.status(400).json({ message: '缺少用户信息' });
     if (!comment?.trim()) return res.status(400).json({ message: '评论不能为空' });
@@ -78,19 +85,25 @@ export const itemController = {
         if (!item) throw new Error('ITEM_NOT_FOUND');
 
         // 1) 写入独立 Review 集合
-        const [doc] = await Review.create(
-          [{
-            itemId,
-            userId,
-            userName,
-            rating,
-            taste,
-            packaging,
-            comment: comment.trim(),
-            date: date ? new Date(date) : new Date()
-          }],
-          { session }
-        );
+        const reviewData: any = {
+          itemId,
+          userId,
+          userName,
+          rating,
+          comment: comment.trim(),
+          date: date ? new Date(date) : new Date()
+        };
+        
+        // 添加可选的评分类别
+        if (taste !== undefined) reviewData.taste = taste;
+        if (service !== undefined) reviewData.service = service;
+        if (environment !== undefined) reviewData.environment = environment;
+        if (comfort !== undefined) reviewData.comfort = comfort;
+        if (location !== undefined) reviewData.location = location;
+        if (scenery !== undefined) reviewData.scenery = scenery;
+        if (transportation !== undefined) reviewData.transportation = transportation;
+        
+        const [doc] = await Review.create([reviewData], { session });
         createdReview = doc;
 
         // 2) 同步到 Item.reviews（只保留最近 N 条）
@@ -100,11 +113,18 @@ export const itemController = {
           userId,
           userName,
           rating,
-          taste,
-          packaging,
           comment: comment.trim(),
           date: doc.date
         };
+        
+        // 添加可选的评分类别到嵌入式评论
+        if (taste !== undefined) embedded.taste = taste;
+        if (service !== undefined) embedded.service = service;
+        if (environment !== undefined) embedded.environment = environment;
+        if (comfort !== undefined) embedded.comfort = comfort;
+        if (location !== undefined) embedded.location = location;
+        if (scenery !== undefined) embedded.scenery = scenery;
+        if (transportation !== undefined) embedded.transportation = transportation;
         item.reviews.push(embedded);
         if (item.reviews.length > MAX_EMBEDDED) {
           item.reviews = item.reviews.slice(-MAX_EMBEDDED);
@@ -136,16 +156,25 @@ export const itemController = {
       if (txnNotSupported) {
         try {
           // A: 先写 Review
-          const doc = await Review.create({
+          const reviewData: any = {
             itemId,
             userId,
             userName,
             rating,
-            taste,
-            packaging,
             comment: comment.trim(),
             date: date ? new Date(date) : new Date()
-          });
+          };
+          
+          // 添加可选的评分类别
+          if (taste !== undefined) reviewData.taste = taste;
+          if (service !== undefined) reviewData.service = service;
+          if (environment !== undefined) reviewData.environment = environment;
+          if (comfort !== undefined) reviewData.comfort = comfort;
+          if (location !== undefined) reviewData.location = location;
+          if (scenery !== undefined) reviewData.scenery = scenery;
+          if (transportation !== undefined) reviewData.transportation = transportation;
+          
+          const doc = await Review.create(reviewData);
 
           // B: 再更新 Item
           const item = await Item.findById(itemId);
@@ -160,11 +189,18 @@ export const itemController = {
             userId,
             userName,
             rating,
-            taste,
-            packaging,
             comment: comment.trim(),
             date: doc.date
           };
+          
+          // 添加可选的评分类别到嵌入式评论
+          if (taste !== undefined) embedded.taste = taste;
+          if (service !== undefined) embedded.service = service;
+          if (environment !== undefined) embedded.environment = environment;
+          if (comfort !== undefined) embedded.comfort = comfort;
+          if (location !== undefined) embedded.location = location;
+          if (scenery !== undefined) embedded.scenery = scenery;
+          if (transportation !== undefined) embedded.transportation = transportation;
           item.reviews.push(embedded);
           if (item.reviews.length > MAX_EMBEDDED) {
             item.reviews = item.reviews.slice(-MAX_EMBEDDED);

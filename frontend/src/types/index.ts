@@ -20,6 +20,13 @@ export interface Review {
   userId: string;
   userName: string;
   rating: number;
+  taste?: number;
+  service?: number;
+  environment?: number;
+  comfort?: number;
+  location?: number;
+  scenery?: number;
+  transportation?: number;
   comment: string;
   date: string;
 }

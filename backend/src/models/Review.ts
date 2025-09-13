@@ -5,8 +5,13 @@ export interface IReview extends Document {
   userId: string;
   userName: string;
   rating: number;
-  taste: number;
-  packaging: number;
+  taste?: number;
+  service?: number;
+  environment?: number;
+  comfort?: number;
+  location?: number;
+  scenery?: number;
+  transportation?: number;
   comment: string;
   date: Date;
 }
@@ -16,8 +21,13 @@ const ReviewSchema: Schema = new Schema({
   userId: { type: String, required: true },
   userName: { type: String, required: true },
   rating: { type: Number, required: true },
-  taste: { type: Number, required: true },
-  packaging: { type: Number, required: true },
+  taste: { type: Number, required: false },
+  service: { type: Number, required: false },
+  environment: { type: Number, required: false },
+  comfort: { type: Number, required: false },
+  location: { type: Number, required: false },
+  scenery: { type: Number, required: false },
+  transportation: { type: Number, required: false },
   comment: { type: String, required: true },
   date: { type: Date, default: Date.now }
 });
