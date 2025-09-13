@@ -1,5 +1,6 @@
 import { Item } from '../types';
-
+declare const BMap: any;
+declare const BMapLib: any;
 // 用户位置状态
 let userLocation: { latitude: number; longitude: number } | null = null;
 
@@ -44,30 +45,118 @@ export const calculateDistance = (
     }
 
     // 检查百度地图API是否可用
-    if (typeof (window as any).BMap !== 'undefined' && typeof (window as any).BMapLib !== 'undefined') {
+    if (typeof BMap !== 'undefined') {
       try {
-      // 创建用户位置点
-      const userPoint = new (window as any).BMap.Point(userLocation.longitude, userLocation.latitude);
-      // 创建项目位置点
-      const itemPoint = new (window as any).BMap.Point(item.location.coordinates[0], item.location.coordinates[1]);
-      
-      // 计算距离（米）
-      const distance = (window as any).BMapLib.GeoUtils.getDistance(userPoint, itemPoint);
-      resolve(distance);
+        // 创建用户位置点
+        const userPoint = new BMap.Point(userLocation.longitude, userLocation.latitude);
+        // 创建项目位置点
+        const itemPoint = new BMap.Point(item.location.coordinates[0], item.location.coordinates[1]);
+        
+        // 计算距离（米）
+        const distance = BMapLib.GeoUtils.getDistance(userPoint, itemPoint);
+        resolve(distance);
       } catch (error) {
-      reject(error);
+        reject(error);
       }
     } else {
       // 如果百度地图API不可用，使用Haversine公式计算近似距离
       const distance = calculateHaversineDistance(
-      userLocation.latitude,
-      userLocation.longitude,
-      item.location.coordinates[1],
-      item.location.coordinates[0]
+        userLocation.latitude,
+        userLocation.longitude,
+        item.location.coordinates[1],
+        item.location.coordinates[0]
       );
       resolve(distance);
     }
   });
+};
+
+// 获取交通路线和时间信息
+export const getTransportInfo = (
+  item: Item
+): Promise<{ mode: string; duration: string; distance: string }> => {
+  return new Promise((resolve, reject) => {
+    if (!userLocation) {
+      reject(new Error('用户位置信息不可用'));
+      return;
+    }
+
+    if (!item.location.coordinates || item.location.coordinates.length < 2) {
+      reject(new Error('项目缺少坐标信息'));
+      return;
+    }
+
+    // 检查百度地图API是否可用
+    if (typeof BMap !== 'undefined') {
+      try {
+        // 创建用户位置点
+        const userPoint = new BMap.Point(userLocation.longitude, userLocation.latitude);
+        // 创建项目位置点
+        const itemPoint = new BMap.Point(item.location.coordinates[0], item.location.coordinates[1]);
+        
+        // 创建驾车路线规划实例
+        const driving = new BMap.DrivingRoute(userPoint, {
+          onSearchComplete: (results: any) => {
+            if (driving.getStatus() === BMap.STATUS_SUCCESS) {
+              const plan = results.getPlan(0);
+              const distance = plan.getDistance(true); // 获取距离
+              const duration = plan.getDuration(true); // 获取时间
+              
+              resolve({
+                mode: '驾车',
+                duration: duration,
+                distance: distance
+              });
+            } else {
+              // 如果驾车路线规划失败，尝试步行
+              const walking = new BMap.WalkingRoute(userPoint, {
+                onSearchComplete: (walkResults: any) => {
+                  if (walking.getStatus() === BMap.STATUS_SUCCESS) {
+                    const walkPlan = walkResults.getPlan(0);
+                    const walkDistance = walkPlan.getDistance(true);
+                    const walkDuration = walkPlan.getDuration(true);
+                    
+                    resolve({
+                      mode: '步行',
+                      duration: walkDuration,
+                      distance: walkDistance
+                    });
+                  } else {
+                    reject(new Error('无法获取路线信息'));
+                  }
+                }
+              });
+              walking.search(itemPoint);
+            }
+          }
+        });
+        driving.search(itemPoint);
+      } catch (error) {
+        reject(error);
+      }
+    } else {
+      reject(new Error('百度地图API不可用'));
+    }
+  });
+};
+
+// 生成百度地图导航链接
+export const generateBaiduMapLink = (
+  item: Item
+): string => {
+  if (!userLocation) {
+    return `https://map.baidu.com/search/${encodeURIComponent(item.location.address)}`;
+  }
+
+  if (!item.location.coordinates || item.location.coordinates.length < 2) {
+    return `https://map.baidu.com/search/${encodeURIComponent(item.location.address)}`;
+  }
+
+  const origin = `${userLocation.latitude},${userLocation.longitude}`;
+  const destination = `${item.location.coordinates[1]},${item.location.coordinates[0]}`;
+  const destinationName = encodeURIComponent(item.name);
+  
+  return `https://map.baidu.com/direction?origin=${origin}&destination=${destination}&mode=driving&region=中国&output=html&destination_name=${destinationName}`;
 };
 
 // Haversine公式计算两点间距离（备用方案）

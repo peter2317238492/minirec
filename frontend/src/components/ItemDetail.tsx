@@ -1,9 +1,10 @@
 // frontend/src/components/ItemDetail.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Item } from '../types';
 import ImageGallery from './ImageGallery';
 import StarRating from './StarRating';
+import { getTransportInfo, generateBaiduMapLink, calculateDistance, formatDistance } from '../utils/location';
 
 interface ItemDetailProps {
   item: Item;
@@ -13,6 +14,32 @@ interface ItemDetailProps {
 }
 
 const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onReview }) => {
+  const [transportInfo, setTransportInfo] = useState<{ mode: string; duration: string; distance: string } | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
+  const [mapLink, setMapLink] = useState<string>('');
+
+  useEffect(() => {
+    const loadTransportInfo = async () => {
+      try {
+        // 获取交通信息
+        const info = await getTransportInfo(item);
+        setTransportInfo(info);
+        
+        // 获取直线距离
+        const dist = await calculateDistance(item);
+        setDistance(dist);
+        
+        // 生成地图链接
+        const link = generateBaiduMapLink(item);
+        setMapLink(link);
+      } catch (error) {
+        console.log('获取交通信息失败:', error);
+      }
+    };
+
+    loadTransportInfo();
+  }, [item]);
+
   return (
     <motion.div 
       className="max-w-4xl mx-auto"
@@ -107,17 +134,17 @@ const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onRev
             <p className="text-gray-700 leading-relaxed bg-gray-50 p-5 rounded-xl">{item.description}</p>
           </div>
           
-          {/* 位置信息 */}
+          {/* 位置信息和交通 */}
           <div className="mb-8">
             <h2 className="text-xl font-bold mb-4 flex items-center text-gray-900">
               <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              位置信息
+              位置信息与交通
             </h2>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl">
-              <p className="text-gray-800 mb-3 flex items-center">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl space-y-4">
+              <p className="text-gray-800 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                 </svg>
@@ -132,6 +159,68 @@ const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onRev
                 <span className="font-medium">地址：</span>
                 <span className="ml-2 bg-white px-3 py-1 rounded-lg shadow-sm flex-1">{item.location.address}</span>
               </p>
+              
+              {/* 距离信息 */}
+              {distance !== null && (
+                <p className="text-gray-800 flex items-center">
+                  <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  <span className="font-medium">直线距离：</span>
+                  <span className="ml-2 bg-white px-3 py-1 rounded-lg shadow-sm">{formatDistance(distance)}</span>
+                </p>
+              )}
+              
+              {/* 交通信息 */}
+              {transportInfo && (
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-gray-800 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      推荐交通方式
+                    </h3>
+                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
+                      {transportInfo.mode}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      预计时间：<span className="font-medium ml-1">{transportInfo.duration}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                      路程距离：<span className="font-medium ml-1">{transportInfo.distance}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* 导航链接 */}
+              {mapLink && (
+                <motion.a
+                  href={mapLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  百度地图导航
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </motion.a>
+              )}
             </div>
           </div>
           
