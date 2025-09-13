@@ -1,8 +1,9 @@
 // frontend/src/components/ItemCard.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Item } from '../types';
 import StarRating from './StarRating';
+import LazyImage from './LazyImage';
 import { formatPurchaseCount, categoryColors, categoryLabels } from '../utils/helpers';
 import { calculateDistance, formatDistance } from '../utils/location';
 
@@ -41,14 +42,11 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
       transition={{ duration: 0.3 }}
     >
       <div className="h-48 relative">
-        <img
+        <LazyImage
           src={item.images?.[0] || 'https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?w=400&q=80'}
           alt={item.name}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?w=400&q=80';
-          }}
-          loading="lazy"
+          placeholder="https://images.unsplash.com/photo-1483683804023-6ccdb62f86ef?w=400&q=80"
         />
         <motion.div 
           className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-4"
@@ -141,4 +139,4 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
   );
 };
 
-export default ItemCard;
+export default memo(ItemCard);

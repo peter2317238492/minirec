@@ -1,5 +1,5 @@
 // frontend/src/components/StarRating.tsx
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 
 interface StarRatingProps {
@@ -50,4 +50,4 @@ const StarRating: React.FC<StarRatingProps> = ({ rating, size = 'md' }) => {
   );
 };
 
-export default StarRating;
+export default memo(StarRating);

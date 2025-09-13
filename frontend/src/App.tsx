@@ -1,23 +1,29 @@
 // frontend/src/App.tsx - 简化后的主文件
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import './index.css';
-
-// 导入组件
-import SearchBar from './components/SearchBar';
-import ReviewModal from './components/ReviewModal';
-import ImageGallery from './components/ImageGallery';
-import ItemCard from './components/ItemCard';
-import ItemDetail from './components/ItemDetail';
-import LoginModal from './components/LoginModal';
-import PreferencesModal from './components/PreferencesModal';
-import StarRating from './components/StarRating';
 
 // 导入类型和服务
 import { Item, User } from './types';
 import { apiService } from './services/api';
 import { getUserLocation } from './utils/location';
+import { useInfiniteScroll } from './hooks/useInfiniteScroll';
+
+// 导入组件
+const SearchBar = lazy(() => import('./components/SearchBar'));
+const ReviewModal = lazy(() => import('./components/ReviewModal'));
+const ItemCard = lazy(() => import('./components/ItemCard'));
+const ItemDetail = lazy(() => import('./components/ItemDetail'));
+const LoginModal = lazy(() => import('./components/LoginModal'));
+const PreferencesModal = lazy(() => import('./components/PreferencesModal'));
+
+// 加载状态组件
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center p-4">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+  </div>
+);
 
 // 配置axios
 axios.defaults.baseURL = 'https://minirec-production.up.railway.app';
@@ -36,6 +42,9 @@ function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isRegister, setIsRegister] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [itemsPerPage] = useState(8);
 
   // 初始化
   useEffect(() => {
@@ -52,28 +61,63 @@ function App() {
     getUserLocation().catch((error) => {
       console.log('获取用户位置失败:', error);
     });
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 监听类别和搜索变化
   useEffect(() => {
-    loadItems();
-  }, [selectedCategory, searchQuery]);
+    setCurrentPage(1);
+    setItems([]);
+    setHasMore(true);
+    loadItems(true);
+  }, [selectedCategory, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 监听用户登录状态
   useEffect(() => {
     if (user && token) {
       loadRecommendations();
     }
-  }, [user, token]);
+  }, [user, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-const loadItems = async () => {
-  setLoading(true);
+// 无限滚动处理函数
+  const handleLoadMore = useCallback(() => {
+    if (!loading && hasMore && !selectedItem) {
+      setCurrentPage(prev => prev + 1);
+      setTimeout(() => loadItems(), 100);
+    }
+  }, [loading, hasMore, selectedItem]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 使用useMemo优化计算
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      if (selectedCategory === 'all') return true;
+      return item.category === selectedCategory;
+    });
+  }, [items, selectedCategory]);
+
+  const displayRecommendations = useMemo(() => {
+    return recommendations.slice(0, 4);
+  }, [recommendations]);
+
+  // 使用无限滚动hook
+  useInfiniteScroll(handleLoadMore, { threshold: 200 });
+
+  const loadItems = async (reset = false) => {
+    if (reset) {
+      setLoading(true);
+    } else {
+      setLoading(true);
+    }
+  
   console.log('====== 前端loadItems开始 ======');
   console.log('当前状态 - selectedCategory:', selectedCategory);
   console.log('当前状态 - searchQuery:', searchQuery, 'type:', typeof searchQuery);
+  console.log('当前状态 - currentPage:', currentPage);
   
   try {
-    const params: any = {};
+    const params: any = {
+      page: currentPage,
+      limit: itemsPerPage
+    };
     
     // 处理类别筛选
     if (selectedCategory !== 'all') {
@@ -97,11 +141,21 @@ const loadItems = async () => {
       console.log('第一个结果:', response.data[0].name);
     }
     
-    setItems(response.data);
+    // 检查是否还有更多数据
+    if (response.data.length < itemsPerPage) {
+      setHasMore(false);
+    }
+    
+    if (reset) {
+      setItems(response.data);
+    } else {
+      setItems(prev => [...prev, ...response.data]);
+    }
+    
     console.log('====== 前端loadItems结束 ======\n');
   } catch (error) {
     console.error('加载项目失败:', error);
-    setItems([]);
+    setHasMore(false);
   } finally {
     setLoading(false);
   }
@@ -413,10 +467,12 @@ const handleSearch = (query: string) => {
       {!selectedItem && (
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 py-8">
           <div className="container mx-auto px-4">
-            <SearchBar 
-              onSearch={handleSearch}
-              placeholder="搜索景点、美食、酒店..."
-            />
+            <Suspense fallback={<LoadingFallback />}>
+              <SearchBar 
+                onSearch={handleSearch}
+                placeholder="搜索景点、美食、酒店..."
+              />
+            </Suspense>
             
             {/* 搜索结果提示 */}
             {searchQuery && (
@@ -454,12 +510,14 @@ const handleSearch = (query: string) => {
               exit={{ opacity: 0, x: -100 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <ItemDetail 
-                item={selectedItem} 
-                onBack={() => setSelectedItem(null)}
-                onPurchase={handlePurchase}
-                onReview={() => setShowReviewModal(true)}
-              />
+              <Suspense fallback={<LoadingFallback />}>
+                <ItemDetail 
+                  item={selectedItem} 
+                  onBack={() => setSelectedItem(null)}
+                  onPurchase={handlePurchase}
+                  onReview={() => setShowReviewModal(true)}
+                />
+              </Suspense>
             </motion.div>
           ) : (
             <motion.div
@@ -502,7 +560,7 @@ const handleSearch = (query: string) => {
                     ></motion.div>
                   </motion.div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {recommendations.slice(0, 4).map((item, index) => (
+                    {displayRecommendations.map((item, index) => (
                       <motion.div 
                         key={item._id}
                         initial={{ opacity: 0, y: 20 }}
@@ -510,10 +568,12 @@ const handleSearch = (query: string) => {
                         transition={{ delay: 0.1 * index, duration: 0.5 }}
                         whileHover={{ y: -10 }}
                       >
-                        <ItemCard 
-                          item={item} 
-                          onClick={() => fetchItemById(item._id)}
-                        />
+                        <Suspense fallback={<LoadingFallback />}>
+                          <ItemCard 
+                            item={item} 
+                            onClick={() => fetchItemById(item._id)}
+                          />
+                        </Suspense>
                       </motion.div>
                     ))}
                   </div>
@@ -575,25 +635,69 @@ const handleSearch = (query: string) => {
                   </motion.p>
                 </motion.div>
               ) : items.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <AnimatePresence>
-                    {items.map((item, index) => (
-                      <motion.div 
-                        key={item._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ delay: 0.05 * index, duration: 0.3 }}
-                        layout
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <AnimatePresence>
+                      {filteredItems.map((item, index) => (
+                        <motion.div 
+                          key={item._id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ delay: 0.05 * index, duration: 0.3 }}
+                          layout
+                        >
+                          <Suspense fallback={<LoadingFallback />}>
+                            <ItemCard 
+                              item={item} 
+                              onClick={() => fetchItemById(item._id)}
+                            />
+                          </Suspense>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                  
+                  {/* 加载更多按钮 */}
+                  {hasMore && (
+                    <motion.div 
+                      className="text-center mt-8"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <button
+                        onClick={() => {
+                          setCurrentPage(prev => prev + 1);
+                          setTimeout(() => loadItems(), 100);
+                        }}
+                        disabled={loading}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
-                        <ItemCard 
-                          item={item} 
-                          onClick={() => fetchItemById(item._id)}
-                        />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
+                        {loading ? (
+                          <span className="flex items-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            加载中...
+                          </span>
+                        ) : (
+                          '加载更多'
+                        )}
+                      </button>
+                    </motion.div>
+                  )}
+                  
+                  {!hasMore && items.length > 0 && (
+                    <motion.div 
+                      className="text-center mt-8 text-gray-500"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <p>已加载全部内容</p>
+                    </motion.div>
+                  )}
+                </>
               ) : (
                 <motion.div 
                   className="text-center py-16 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100"
@@ -646,33 +750,39 @@ const handleSearch = (query: string) => {
       </motion.main>
 
       {/* Modals */}
-      <LoginModal 
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onLogin={handleLogin}
-        isRegister={isRegister}
-        setIsRegister={setIsRegister}
-      />
+      <Suspense fallback={<LoadingFallback />}>
+        <LoginModal 
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onLogin={handleLogin}
+          isRegister={isRegister}
+          setIsRegister={setIsRegister}
+        />
+      </Suspense>
       
       {user && (
         <>
-          <PreferencesModal
-            isOpen={showPreferencesModal}
-            onClose={() => setShowPreferencesModal(false)}
-            onSave={handleSavePreferences}
-            currentPreferences={user?.preferences}
-            userId={user.id}
-            token={token}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <PreferencesModal
+              isOpen={showPreferencesModal}
+              onClose={() => setShowPreferencesModal(false)}
+              onSave={handleSavePreferences}
+              currentPreferences={user?.preferences}
+              userId={user.id}
+              token={token}
+            />
+          </Suspense>
           
-          <ReviewModal
-            isOpen={showReviewModal}
-            onClose={() => setShowReviewModal(false)}
-            item={selectedItem}
-            user={user}
-            onSubmit={handleReviewSubmit}
-            category={selectedItem?.category as 'food' | 'hotel' | 'attraction'}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <ReviewModal
+              isOpen={showReviewModal}
+              onClose={() => setShowReviewModal(false)}
+              item={selectedItem}
+              user={user}
+              onSubmit={handleReviewSubmit}
+              category={selectedItem?.category as 'food' | 'hotel' | 'attraction'}
+            />
+          </Suspense>
         </>
       )}
     </motion.div>

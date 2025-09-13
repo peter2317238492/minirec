@@ -5,7 +5,7 @@ axios.defaults.baseURL = 'https://minirec-production.up.railway.app';
 
 export const apiService = {
   // 项目相关
-  async getItems(params?: { category?: string; search?: string }) {
+  async getItems(params?: { category?: string; search?: string; page?: number; limit?: number }) {
     const response = await axios.get('/api/items', { params });
     return response.data;
   },

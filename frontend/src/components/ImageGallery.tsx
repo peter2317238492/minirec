@@ -1,5 +1,6 @@
 // frontend/src/components/ImageGallery.tsx
 import React, { useState } from 'react';
+import LazyImage from './LazyImage';
 
 interface ImageGalleryProps {
   images: string[];
@@ -32,10 +33,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title }) => {
     <div className="relative">
       {/* 主图片显示 */}
       <div className="relative h-96 bg-gray-200 rounded-lg overflow-hidden">
-        <img 
+        <LazyImage 
           src={imageError[currentIndex] ? defaultImage : displayImages[currentIndex]}
           alt={`${title} - 图片 ${currentIndex + 1}`}
           className="w-full h-full object-cover"
+          placeholder={defaultImage}
           onError={() => handleImageError(currentIndex)}
         />
         
@@ -103,10 +105,11 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, title }) => {
                   : 'border-transparent hover:border-gray-300'
               }`}
             >
-              <img 
+              <LazyImage 
                 src={imageError[index] ? defaultImage : image}
                 alt={`缩略图 ${index + 1}`}
                 className="w-full h-full object-cover"
+                placeholder={defaultImage}
                 onError={() => handleImageError(index)}
               />
             </button>
