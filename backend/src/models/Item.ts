@@ -7,8 +7,13 @@ export interface IEmbeddedReview {
   userId: string;
   userName: string;
   rating: number;
-  taste: number;
-  packaging: number;
+  taste?: number;
+  service?: number;
+  environment?: number;
+  comfort?: number;
+  location?: number;
+  scenery?: number;
+  transportation?: number;
   comment: string;
   date: Date;
 }
@@ -48,8 +53,13 @@ const EmbeddedReviewSchema = new Schema<IEmbeddedReview>(
     userId: { type: String, required: true },
     userName: { type: String, required: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
-    taste: { type: Number, required: true, min: 1, max: 5 },
-    packaging: { type: Number, required: true, min: 1, max: 5 },
+    taste: { type: Number, required: false, min: 1, max: 5 },
+    service: { type: Number, required: false, min: 1, max: 5 },
+    environment: { type: Number, required: false, min: 1, max: 5 },
+    comfort: { type: Number, required: false, min: 1, max: 5 },
+    location: { type: Number, required: false, min: 1, max: 5 },
+    scenery: { type: Number, required: false, min: 1, max: 5 },
+    transportation: { type: Number, required: false, min: 1, max: 5 },
     comment: { type: String, required: true, trim: true },
     date: { type: Date, default: Date.now }
   },

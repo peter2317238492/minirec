@@ -10,11 +10,12 @@ interface ReviewModalProps {
   onSubmit: (payload: {
     rating: number;
     taste?: number;
-    packaging?: number;
     service?: number;
     environment?: number;
-    location?: number;
     comfort?: number;
+    location?: number;
+    scenery?: number;
+    transportation?: number;
     comment: string;
   }) => void;
   category?: 'food' | 'hotel' | 'attraction';
@@ -32,11 +33,12 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   const [comment, setComment] = useState('');
   const [extraRatings, setExtraRatings] = useState({
     taste: 5,
-    packaging: 5,
     service: 5,
     environment: 5,
+    comfort: 5,
     location: 5,
-    comfort: 5
+    scenery: 5,
+    transportation: 5
   });
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,8 +51,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       case 'food':
         return [
           { key: 'taste', label: '口味', icon: '🍽️' },
-          { key: 'service', label: '服务', icon: '👨‍🍳' },
-          { key: 'environment', label: '环境', icon: '🏠' }
+          { key: 'service', label: '服务', icon: '🛎️' },
+          { key: 'environment', label: '环境', icon: '🌿' }
         ];
       case 'hotel':
         return [
@@ -60,9 +62,9 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         ];
       case 'attraction':
         return [
-          { key: 'environment', label: '景色', icon: '🏞️' },
-          { key: 'service', label: '服务', icon: '🎫' },
-          { key: 'location', label: '交通', icon: '🚗' }
+          { key: 'scenery', label: '景色', icon: '🏞️' },
+          { key: 'service', label: '服务', icon: '🛎️' },
+          { key: 'transportation', label: '交通', icon: '🚗' }
         ];
       default:
         return [];
@@ -98,11 +100,12 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
       setComment('');
       setExtraRatings({
         taste: 5,
-        packaging: 5,
         service: 5,
         environment: 5,
+        comfort: 5,
         location: 5,
-        comfort: 5
+        scenery: 5,
+        transportation: 5
       });
     } finally {
       setLoading(false);
