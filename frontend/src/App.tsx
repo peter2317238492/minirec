@@ -30,7 +30,7 @@ const LoadingFallback = () => (
 );
 
 // 配置axios
-axios.defaults.baseURL = 'http://minirec-production.up.railway.app'; // 替换为你的后端地址
+axios.defaults.baseURL = 'https://minirec-production.up.railway.app'; // 替换为你的后端地址
 
 function App() {
   // 状态管理‘
