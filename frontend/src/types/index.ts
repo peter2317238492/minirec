@@ -42,3 +42,83 @@ export interface User {
     tags: string[];
   };
 }
+
+export interface MerchantInfo {
+  shopName: string;
+  description: string;
+  address: string;
+  phone: string;
+  email: string;
+  businessHours: {
+    open: string;
+    close: string;
+  };
+  category: 'attraction' | 'food' | 'hotel';
+  images: string[];
+  status: 'pending' | 'approved' | 'rejected' | 'suspended';
+}
+
+export interface MerchantPermission {
+  // 商品管理权限
+  canAddItems: boolean;
+  canEditItems: boolean;
+  canDeleteItems: boolean;
+  canManageCategories: boolean;
+  
+  // 数据分析权限
+  canViewAnalytics: boolean;
+  canViewRevenue: boolean;
+  canExportData: boolean;
+  
+  // 订单管理权限
+  canManageOrders: boolean;
+  canProcessRefunds: boolean;
+  canViewCustomerInfo: boolean;
+  
+  // 评价管理权限
+  canRespondToReviews: boolean;
+  canDeleteReviews: boolean;
+  canViewReviewAnalytics: boolean;
+  
+  // 店铺管理权限
+  canUpdateShopInfo: boolean;
+  canManageBusinessHours: boolean;
+  canUploadImages: boolean;
+  
+  // 营销推广权限
+  canCreatePromotions: boolean;
+  canManageDiscounts: boolean;
+  canViewMarketingStats: boolean;
+  
+  // 系统设置权限
+  canManageUsers: boolean;
+  canViewSystemLogs: boolean;
+  canManageApiKeys: boolean;
+}
+
+export interface LoginRecord {
+  loginDate: string;
+  loginType: 'password' | 'third_party';
+  ipAddress: string;
+  userAgent: string;
+}
+
+export interface Merchant {
+  id: string;
+  username: string;
+  email: string;
+  merchantInfo: MerchantInfo;
+  permissions: MerchantPermission;
+  loginHistory?: LoginRecord[];
+  lastLoginAt?: string;
+}
+
+export interface MerchantLoginInfo {
+  date: string;
+  loginType: string;
+  receiver: string;
+  handler: string;
+  description: string;
+  processingTime: string;
+  submitter: string;
+}
