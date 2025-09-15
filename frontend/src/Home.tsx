@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './index.css';
-import axios from 'axios';
 import SearchBar from './components/SearchBar'; 
 import ImageGallery from './components/ImageGallery';
 import ReviewModal from './components/ReviewModal';
+import Pagination from './components/Pagination';
 
 const [isRegister, setIsRegister] = useState(false);
 const [showReviewModal, setShowReviewModal] = useState(false);
@@ -26,6 +26,17 @@ interface Item {
   reviews: Review[];
 }
 
+// 分页响应接口
+interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    itemsPerPage: number;
+  };
+}
+
 interface Review {
   userId: string;
   userName: string;
@@ -44,72 +55,8 @@ interface User {
   };
 }
 
-// API Service
-const API_URL = 'http://localhost:5000/api';
-
-const apiService = {
-  async getItems(category?: string): Promise<Item[]> {
-    const url = category ? `${API_URL}/items?category=${category}` : `${API_URL}/items`;
-    const response = await fetch(url);
-    return response.json();
-  },
-
-  async getItemById(id: string): Promise<Item> {
-    const response = await fetch(`${API_URL}/items/${id}`);
-    return response.json();
-  },
-
-  async login(username: string, password: string) {
-    const response = await fetch(`${API_URL}/users/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
-    });
-    return response.json();
-  },
-
-  async register(username: string, email: string, password: string) {
-    const response = await fetch(`${API_URL}/users/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password })
-    });
-    return response.json();
-  },
-
-  async updatePreferences(userId: string, preferences: any, token: string) {
-    const response = await fetch(`${API_URL}/users/${userId}/preferences`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(preferences)
-    });
-    return response.json();
-  },
-
-  async recordPurchase(userId: string, purchaseData: any, token: string) {
-    const response = await fetch(`${API_URL}/users/${userId}/purchase`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(purchaseData)
-    });
-    return response.json();
-  },
-
-  async getRecommendations(userId: string, token: string): Promise<Item[]> {
-    const response = await fetch(`${API_URL}/recommendations/${userId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    return response.json();
-  }
-};
+// 导入外部 API 服务
+import { apiService } from './services/api';
 
 // Components
 const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
@@ -521,11 +468,17 @@ export default function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [recommendations, setRecommendations] = useState<Item[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>(''); 
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // 分页状态
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(8);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(0); 
 
   useEffect(() => {
     loadItems();
-  }, [selectedCategory]);
+  }, [selectedCategory, currentPage, searchQuery]);
 
   useEffect(() => {
     if (user && token) {
@@ -534,31 +487,66 @@ export default function App() {
   }, [user, token]);
 
   const loadItems = async () => {
-    alert('loadItems 被调用了！');  // 👈 这个一定会弹出
     try {
-      const data = await apiService.getItems(selectedCategory === 'all' ? undefined : selectedCategory);
-          // 👈 添加调试输出
-      console.log('从API获取的数据:', data);
-      if (data.length > 0) {
-        console.log('第一个项目:', data[0]);
-        console.log('purchaseCount是否存在:', 'purchaseCount' in data[0]);
-        console.log('purchaseCount值:', data[0].purchaseCount);
+      const params: any = {
+        page: currentPage,
+        limit: itemsPerPage
+      };
+      
+      if (selectedCategory !== 'all') {
+        params.category = selectedCategory;
       }
-      setItems(data);
+      
+      if (searchQuery) {
+        params.search = searchQuery;
+      }
+      
+      const response = await apiService.getItems(params);
+      
+      // 处理分页响应
+      if (response && typeof response === 'object' && 'data' in response && 'pagination' in response) {
+        const paginatedResponse = response as PaginatedResponse<Item>;
+        setItems(paginatedResponse.data);
+        setTotalItems(paginatedResponse.pagination.total);
+        setTotalPages(paginatedResponse.pagination.totalPages);
+      } else if (Array.isArray(response)) {
+        // 如果API返回的是数组，则使用旧逻辑
+        const itemsArray = response as Item[];
+        setItems(itemsArray);
+        setTotalItems(itemsArray.length);
+        setTotalPages(Math.ceil(itemsArray.length / itemsPerPage));
+      } else {
+        // 其他情况，使用空数组
+        setItems([]);
+        setTotalItems(0);
+        setTotalPages(0);
+      }
     } catch (error) {
       console.error('加载项目失败:', error);
       // 使用模拟数据
-      setItems(getMockItems());
+      const mockData = getMockItems();
+      setItems(mockData);
+      setTotalItems(mockData.length);
+      setTotalPages(Math.ceil(mockData.length / itemsPerPage));
     }
   };
 
   const loadRecommendations = async () => {
     if (!user || !token) return;
     try {
-      const data = await apiService.getRecommendations(user.id, token);
-      setRecommendations(data);
+      const response = await apiService.getRecommendations(user.id, token);
+      
+      // 处理推荐响应
+      if (Array.isArray(response)) {
+        setRecommendations(response);
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        setRecommendations(response.data);
+      } else {
+        setRecommendations([]);
+      }
     } catch (error) {
       console.error('加载推荐失败:', error);
+      setRecommendations([]);
     }
   };
 
@@ -585,12 +573,13 @@ export default function App() {
     
     if (selectedItem) {
       try {
-        await apiService.recordPurchase(user.id, {
+        const purchaseData = {
           itemId: selectedItem._id,
           itemName: selectedItem.name,
           category: selectedItem.category,
           price: selectedItem.price
-        }, token);
+        };
+        await apiService.recordPurchase(user.id, purchaseData, token);
         alert('购买成功！即将跳转到支付页面...');
       } catch (error) {
         console.error('记录购买失败:', error);
@@ -598,6 +587,31 @@ export default function App() {
     }
   };
 
+  const fetchItemById = async (id: string) => {
+    try {
+      const response = await apiService.getItemById(id);
+      setSelectedItem(response);
+    } catch (e) {
+      console.error('获取项目详情失败:', e);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // 滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1); // 切换类别时重置到第一页
+  };
+  
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // 搜索时重置到第一页
+  };
+  
   const handleSavePreferences = async (preferences: any) => {
     if (!user || !token) return;
     try {
@@ -608,15 +622,6 @@ export default function App() {
       console.error('保存偏好失败:', error);
     }
   };
-  const fetchItemById = async (id: string) => {
-    try {
-      const { data } = await axios.get(`/api/items/${id}`);
-      setSelectedItem(data);            // 关键：用最新详情覆盖
-    } catch (e) {
-      console.error('获取项目详情失败:', e);
-    }
-  };
-  // Mock data function
   const getMockItems = (): Item[] => [
     {
       _id: '1',
@@ -707,7 +712,7 @@ export default function App() {
             ].map(cat => (
               <button
                 key={cat.value}
-                onClick={() => setSelectedCategory(cat.value)}
+                onClick={() => handleCategoryChange(cat.value)}
                 className={`py-3 px-2 border-b-2 transition-colors ${
                   selectedCategory === cat.value
                     ? 'border-blue-500 text-blue-600'
@@ -725,7 +730,7 @@ export default function App() {
       <div className="bg-white py-6">
         <div className="container mx-auto px-4">
           <SearchBar 
-            onSearch={(query:string) => setSearchQuery(query)}
+            onSearch={handleSearch}
             placeholder="搜索景点、美食、酒店..."
           />
         </div>
@@ -775,6 +780,17 @@ export default function App() {
                   />
                 ))}
               </div>
+              
+              {/* 分页组件 */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex justify-center">
+                  <Pagination 
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              )}
             </div>
           </>
         )}
