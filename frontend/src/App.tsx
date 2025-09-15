@@ -19,6 +19,7 @@ const LoginModal = lazy(() => import('./components/LoginModal'));
 const PreferencesModal = lazy(() => import('./components/PreferencesModal'));
 const MerchantLoginModal = lazy(() => import('./components/MerchantLoginModal'));
 const MerchantDashboard = lazy(() => import('./components/MerchantDashboard'));
+const PriceFilter = lazy(() => import('./components/PriceFilter'));
 
 // 加载状态组件
 const LoadingFallback = () => (
@@ -51,6 +52,7 @@ function App() {
   const [hasMore, setHasMore] = useState(true);
   const [itemsPerPage] = useState(8);
   const [loginInfo, setLoginInfo] = useState<MerchantLoginInfo | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
 
   // 初始化
   useEffect(() => {
@@ -60,9 +62,13 @@ function App() {
     const savedLoginInfo = localStorage.getItem('loginInfo');
     
     if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
       setToken(savedToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+      if (parsedUser.preferences?.priceRange) {
+        setPriceRange(parsedUser.preferences.priceRange);
+      }
     } else if (savedMerchant && savedToken) {
       setMerchant(JSON.parse(savedMerchant));
       setToken(savedToken);
@@ -80,13 +86,13 @@ function App() {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 监听类别和搜索变化
+  // 监听类别、搜索和价格变化
   useEffect(() => {
     setCurrentPage(1);
     setItems([]);
     setHasMore(true);
     loadItems(true);
-  }, [selectedCategory, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedCategory, searchQuery, priceRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 监听用户登录状态
   useEffect(() => {
@@ -129,6 +135,7 @@ function App() {
   console.log('当前状态 - selectedCategory:', selectedCategory);
   console.log('当前状态 - searchQuery:', searchQuery, 'type:', typeof searchQuery);
   console.log('当前状态 - currentPage:', currentPage);
+  console.log('当前状态 - priceRange:', priceRange);
   
   try {
     const params: any = {
@@ -146,6 +153,13 @@ function App() {
     if (searchQuery && searchQuery.trim() !== '') {
       params.search = searchQuery.trim();
       console.log('添加search参数:', params.search);
+    }
+    
+    // 处理价格筛选
+    if (priceRange && priceRange[0] >= 0 && priceRange[1] > 0) {
+      params.minPrice = priceRange[0];
+      params.maxPrice = priceRange[1];
+      console.log('添加价格参数:', params.minPrice, '-', params.maxPrice);
     }
     
     console.log('最终请求参数:', params);
@@ -232,6 +246,7 @@ function App() {
     setMerchant(null);
     setToken('');
     setLoginInfo(null);
+    setPriceRange([0, 10000]);
     localStorage.removeItem('user');
     localStorage.removeItem('merchant');
     localStorage.removeItem('token');
@@ -312,6 +327,9 @@ function App() {
   const handleSavePreferences = (preferences: any) => {
     if (user) {
       setUser({ ...user, preferences });
+      if (preferences.priceRange) {
+        setPriceRange(preferences.priceRange);
+      }
       loadRecommendations();
     }
   };
@@ -703,6 +721,14 @@ const handleSearch = (query: string) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
             >
+              {/* 价格筛选器 */}
+              <Suspense fallback={<LoadingFallback />}>
+                <PriceFilter 
+                  priceRange={priceRange}
+                  onPriceRangeChange={setPriceRange}
+                />
+              </Suspense>
+              
               {!searchQuery && (
                 <motion.div 
                   className="flex items-center mb-6"

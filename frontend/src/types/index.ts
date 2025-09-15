@@ -61,6 +61,7 @@ export interface User {
   preferences?: {
     categories: string[];
     tags: string[];
+    priceRange?: [number, number];
   };
 }
 

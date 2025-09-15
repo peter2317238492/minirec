@@ -14,6 +14,8 @@ const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  * 支持：
  *  - ?category=all | attraction | food | hotel
  *  - ?search=关键词（按 name/description 模糊匹配，不区分大小写）
+ *  - ?minPrice=数字（最低价格）
+ *  - ?maxPrice=数字（最高价格）
  * 返回按 rating / purchaseCount 倒序
  */
 router.get('/', async (req, res) => {
@@ -22,6 +24,10 @@ router.get('/', async (req, res) => {
       typeof req.query.category === 'string' ? req.query.category.trim() : '';
     const search =
       typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const minPrice =
+      typeof req.query.minPrice === 'string' ? Number(req.query.minPrice) : undefined;
+    const maxPrice =
+      typeof req.query.maxPrice === 'string' ? Number(req.query.maxPrice) : undefined;
 
     const filter: any = {};
 
@@ -38,6 +44,13 @@ router.get('/', async (req, res) => {
         // { 'location.city': { $regex: q, $options: 'i' } },
         // { tags: { $elemMatch: { $regex: q, $options: 'i' } } },
       ];
+    }
+
+    // 价格筛选
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      filter.price = {};
+      if (minPrice !== undefined) filter.price.$gte = minPrice;
+      if (maxPrice !== undefined) filter.price.$lte = maxPrice;
     }
 
     console.log('--- [/api/items] 最终过滤条件:', JSON.stringify(filter));
