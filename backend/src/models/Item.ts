@@ -39,6 +39,12 @@ export interface IItem extends Document {
   tags: string[];
   details: any;
 
+  /** 商家ID，null表示平台产品，非null表示商家专属产品 */
+  merchantId?: Types.ObjectId | null;
+
+  /** 原始平台产品ID，仅商家产品需要此字段 */
+  originalItemId?: Types.ObjectId;
+
   /** 仅保留最近 N 条（由控制器限制长度，避免文档过大） */
   reviews: IEmbeddedReview[];
 
@@ -90,6 +96,12 @@ const ItemSchema = new Schema<IItem>(
 
     tags: { type: [String], default: [] },
     details: Schema.Types.Mixed,
+
+    // 商家ID，null表示平台产品，非null表示商家专属产品
+    merchantId: { type: Schema.Types.ObjectId, ref: 'Merchant', default: null },
+
+    // 原始平台产品ID，仅商家产品需要此字段
+    originalItemId: { type: Schema.Types.ObjectId, ref: 'Item' },
 
     // 只保留最近 N 条（由控制器逻辑裁剪）
     reviews: { type: [EmbeddedReviewSchema], default: [] }

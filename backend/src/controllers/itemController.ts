@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Item from '../models/Item';
 import Review from '../models/Review';
+import { AuthRequest } from '../middleware/auth';
 
 const MAX_EMBEDDED = 20; // 只在 Item.reviews 里保留最近 N 条
 
@@ -251,6 +252,160 @@ export const itemController = {
       res.json({ total, page, pageSize, rows });
     } catch (error) {
       res.status(500).json({ message: '获取评论失败', error });
+    }
+  },
+
+  /**
+   * 获取平台所有产品（merchantId为null的产品）
+   * GET /api/items/platform
+   */
+  async getPlatformItems(req: Request, res: Response) {
+    try {
+      const { category, search, page = 1, limit = 20 } = req.query;
+      
+      const filter: any = { merchantId: null };
+      
+      if (category && category !== 'all') {
+        filter.category = category;
+      }
+      
+      if (search && typeof search === 'string') {
+        const searchRegex = new RegExp(search, 'i');
+        filter.$or = [
+          { name: searchRegex },
+          { description: searchRegex }
+        ];
+      }
+      
+      const pageNum = Math.max(1, Number(page));
+      const limitNum = Math.min(50, Math.max(1, Number(limit)));
+      
+      const [items, total] = await Promise.all([
+        Item.find(filter)
+          .sort({ rating: -1, purchaseCount: -1 })
+          .skip((pageNum - 1) * limitNum)
+          .limit(limitNum)
+          .lean(),
+        Item.countDocuments(filter)
+      ]);
+      
+      res.json({
+        items,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages: Math.ceil(total / limitNum)
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: '获取平台产品失败', error });
+    }
+  },
+
+  /**
+   * 商家添加平台产品到自己的店铺
+   * POST /api/items/merchant/add
+   */
+  async addPlatformItemsToMerchant(req: AuthRequest, res: Response) {
+    try {
+      const merchantId = req.merchant?.merchantId;
+      if (!merchantId) {
+        return res.status(401).json({ message: '未授权访问' });
+      }
+      
+      const { itemIds } = req.body;
+      
+      if (!Array.isArray(itemIds) || itemIds.length === 0) {
+        return res.status(400).json({ message: '请选择要添加的产品' });
+      }
+      
+      // 验证所有产品ID都是有效的ObjectId
+      const validItemIds = itemIds.filter(id => 
+        mongoose.Types.ObjectId.isValid(id)
+      );
+      
+      if (validItemIds.length === 0) {
+        return res.status(400).json({ message: '无效的产品ID' });
+      }
+      
+      // 获取平台产品（merchantId为null）
+      const platformItems = await Item.find({
+        _id: { $in: validItemIds },
+        merchantId: null
+      });
+      
+      if (platformItems.length === 0) {
+        return res.status(404).json({ message: '未找到指定的平台产品' });
+      }
+      
+      // 检查商家是否已经添加过这些产品
+      const existingItems = await Item.find({
+        merchantId,
+        originalItemId: { $in: validItemIds }
+      });
+      
+      const existingItemIds = existingItems.map(item => 
+        item.originalItemId?.toString()
+      ).filter(Boolean);
+      
+      // 过滤掉已经添加过的产品
+      const newItemIds = validItemIds.filter(id => 
+        !existingItemIds.includes(id)
+      );
+      
+      if (newItemIds.length === 0) {
+        return res.status(400).json({ 
+          message: '所选产品已经添加到您的店铺中' 
+        });
+      }
+      
+      // 获取需要添加的平台产品
+      const platformItemsToAdd = platformItems.filter(item => 
+        newItemIds.includes(item._id.toString())
+      );
+      
+      // 为商家创建产品副本
+      const merchantItems = platformItemsToAdd.map(platformItem => ({
+        ...platformItem.toObject(),
+        _id: new mongoose.Types.ObjectId(),
+        merchantId,
+        originalItemId: platformItem._id,
+        purchaseCount: 0, // 重置购买计数
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+      
+      // 批量保存商家产品
+      const savedItems = await Item.insertMany(merchantItems);
+      
+      res.json({
+        message: `成功添加 ${savedItems.length} 个产品到您的店铺`,
+        items: savedItems
+      });
+    } catch (error) {
+      res.status(500).json({ message: '添加产品失败', error });
+    }
+  },
+
+  /**
+   * 获取商家的产品列表
+   * GET /api/items/merchant
+   */
+  async getMerchantItems(req: AuthRequest, res: Response) {
+    try {
+      const merchantId = req.merchant?.merchantId;
+      if (!merchantId) {
+        return res.status(401).json({ message: '未授权访问' });
+      }
+      
+      const items = await Item.find({ merchantId })
+        .sort({ createdAt: -1 })
+        .lean();
+      
+      res.json({ items });
+    } catch (error) {
+      res.status(500).json({ message: '获取商家产品失败', error });
     }
   }
 };

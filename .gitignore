@@ -62,6 +62,7 @@ yarn-error.log*
 logs/
 *.log
 docs/
+backups/
 # 前端构建
 frontend/build/
 frontend/dist/

@@ -251,6 +251,359 @@ const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onRev
               ))}
             </div>
           </div>
+
+          {/* 详细信息 */}
+          {item.details && (
+            <div className="mb-8">
+              <h2 className="text-xl font-bold mb-6 flex items-center text-gray-900">
+                <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                详细信息
+              </h2>
+              
+              <div className="space-y-6">
+                {/* 开放时间 */}
+                {(item.details.openingHours || item.details.openingMonths) && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      开放时间
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">
+                      {item.details.openingHours || item.details.openingMonths}
+                    </p>
+                  </motion.div>
+                )}
+
+                {/* 门票信息 */}
+                {item.details.ticketInfo && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-purple-50 to-pink-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                      </svg>
+                      门票信息
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">{item.details.ticketInfo}</p>
+                  </motion.div>
+                )}
+
+                {/* 交通选项 */}
+                {item.details.transportationOptions && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-blue-50 to-cyan-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      交通选项
+                    </h3>
+                    <ul className="space-y-2">
+                      {item.details.transportationOptions?.map((option: string, index: number) => (
+                        <li key={index} className="text-gray-700 flex items-start">
+                          <svg className="w-4 h-4 mr-2 mt-0.5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          {option}
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+
+                {/* 亮点特色 */}
+                {item.details.highlights && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-yellow-50 to-orange-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                      亮点特色
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {item.details.highlights?.map((highlight: string, index: number) => (
+                        <motion.div 
+                          key={index}
+                          className="bg-white/70 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.4 + index * 0.1 }}
+                          whileHover={{ 
+                            scale: 1.05,
+                            backgroundColor: "rgba(255, 255, 255, 0.9)"
+                          }}
+                        >
+                          <span className="text-gray-700 flex items-center">
+                            <svg className="w-4 h-4 mr-2 text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            {highlight}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 特色描述 */}
+                {item.details.features && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                      </svg>
+                      特色描述
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">{item.details.features}</p>
+                  </motion.div>
+                )}
+
+                {/* 酒店相关 - 入住/退房时间 */}
+                {(item.details.checkIn || item.details.checkOut) && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-teal-50 to-cyan-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4M8 7h8M8 7l-4 9h16l-4-9" />
+                      </svg>
+                      入住/退房时间
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {item.details.checkIn && (
+                        <div className="bg-white/70 backdrop-blur-sm px-4 py-3 rounded-lg shadow-sm">
+                          <p className="text-sm text-gray-600 mb-1">入住时间</p>
+                          <p className="text-gray-800 font-medium">{item.details.checkIn}</p>
+                        </div>
+                      )}
+                      {item.details.checkOut && (
+                        <div className="bg-white/70 backdrop-blur-sm px-4 py-3 rounded-lg shadow-sm">
+                          <p className="text-sm text-gray-600 mb-1">退房时间</p>
+                          <p className="text-gray-800 font-medium">{item.details.checkOut}</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 酒店设施 */}
+                {item.details.facilities && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-rose-50 to-pink-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.6 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      酒店设施
+                    </h3>
+                    <ul className="space-y-2">
+                      {item.details.facilities?.map((facility: string, index: number) => (
+                        <li key={index} className="text-gray-700 flex items-start">
+                          <svg className="w-4 h-4 mr-2 mt-0.5 text-rose-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          {facility}
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+
+                {/* 餐厅相关 - 营业时间 */}
+                {item.details.openingHours && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-amber-50 to-yellow-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.7 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      营业时间
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">{item.details.openingHours}</p>
+                  </motion.div>
+                )}
+
+                {/* 餐厅相关 - 电话 */}
+                {item.details.phone && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-lime-50 to-green-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.8 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-lime-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      联系电话
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">{item.details.phone}</p>
+                  </motion.div>
+                )}
+
+                {/* 餐厅相关 - 特色菜 */}
+                {item.details.specialties && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-orange-50 to-red-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.9 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
+                      特色推荐
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {item.details.specialties?.map((specialty: string, index: number) => (
+                        <motion.div 
+                          key={index}
+                          className="bg-white/70 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 1.0 + index * 0.1 }}
+                          whileHover={{ 
+                            scale: 1.05,
+                            backgroundColor: "rgba(255, 255, 255, 0.9)"
+                          }}
+                        >
+                          <span className="text-gray-700 flex items-center">
+                            <svg className="w-4 h-4 mr-2 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            {specialty}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 餐厅相关 - 人均消费 */}
+                {item.details.averagePrice && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-emerald-50 to-teal-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 1.0 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                      </svg>
+                      人均消费
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">{item.details.averagePrice}</p>
+                  </motion.div>
+                )}
+
+                {/* 酒店服务 */}
+                {item.details.services && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-cyan-50 to-blue-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 1.1 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      酒店服务
+                    </h3>
+                    <ul className="space-y-2">
+                      {item.details.services?.map((service: string, index: number) => (
+                        <li key={index} className="text-gray-700 flex items-start">
+                          <svg className="w-4 h-4 mr-2 mt-0.5 text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          {service}
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+
+                {/* 酒店房型 */}
+                {item.details.roomTypes && (
+                  <motion.div 
+                    className="bg-gradient-to-br from-violet-50 to-purple-50 p-5 rounded-xl shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 1.2 }}
+                  >
+                    <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+                      <svg className="w-5 h-5 mr-2 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                      房型选择
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {item.details.roomTypes?.map((roomType: string, index: number) => (
+                        <motion.div 
+                          key={index}
+                          className="bg-white/70 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 1.3 + index * 0.1 }}
+                          whileHover={{ 
+                            scale: 1.05,
+                            backgroundColor: "rgba(255, 255, 255, 0.9)"
+                          }}
+                        >
+                          <span className="text-gray-700 flex items-center">
+                            <svg className="w-4 h-4 mr-2 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            {roomType}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          )}
           
           {/* 用户评价 */}
           <div>

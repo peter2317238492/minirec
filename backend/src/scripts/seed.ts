@@ -12,8 +12,7 @@ const seedData = async () => {
     console.log('✅ 数据库连接成功');
 
     // 清空现有数据
-    await Item.deleteMany({});
-    await User.deleteMany({});
+
     console.log('📝 已清空现有数据');
 
     // 创建测试项目数据
@@ -40,6 +39,7 @@ const seedData = async () => {
         },
         reviews: [
           {
+            reviewId: new mongoose.Types.ObjectId(),
             userId: 'user1',
             userName: '张三',
             rating: 5,
@@ -134,6 +134,7 @@ const seedData = async () => {
         },
         reviews: [
           {
+            reviewId: new mongoose.Types.ObjectId(),
             userId: 'user2',
             userName: '李四',
             rating: 4,

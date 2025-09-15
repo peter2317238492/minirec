@@ -1,7 +1,7 @@
 // frontend/src/components/MerchantDashboard.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Merchant, MerchantLoginInfo, LoginRecord } from '../types';
+import { Merchant, MerchantLoginInfo, LoginRecord, Item } from '../types';
 import axios from 'axios';
 
 interface MerchantDashboardProps {
@@ -17,7 +17,7 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
   loginInfo, 
   onLogout 
 }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'info' | 'loginHistory'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'info' | 'products' | 'loginHistory'>('dashboard');
   const [loginHistory, setLoginHistory] = useState<LoginRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -29,14 +29,23 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
     businessHours: merchant.merchantInfo.businessHours
   });
 
-  // 获取登录历史
-  useEffect(() => {
-    if (activeTab === 'loginHistory' && loginHistory.length === 0) {
-      fetchLoginHistory();
-    }
-  }, [activeTab]);
+  // Product management state
+  const [products, setProducts] = useState<Item[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Item | null>(null);
+  const [productOperationHistory, setProductOperationHistory] = useState<any[]>([]);
+  
+  // Platform products state
+  const [showPlatformProductsModal, setShowPlatformProductsModal] = useState(false);
+  const [platformProducts, setPlatformProducts] = useState<Item[]>([]);
+  const [loadingPlatformProducts, setLoadingPlatformProducts] = useState(false);
+  const [selectedPlatformProducts, setSelectedPlatformProducts] = useState<string[]>([]);
+  const [platformProductSearch, setPlatformProductSearch] = useState('');
+  const [platformProductCategory, setPlatformProductCategory] = useState('all');
+  
+  
 
-  const fetchLoginHistory = async () => {
+  const fetchLoginHistory = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/merchants/login-history', {
@@ -50,6 +59,179 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
     } finally {
       setLoading(false);
     }
+  }, [token]);
+
+  const fetchProducts = useCallback(async () => {
+    setLoadingProducts(true);
+    try {
+      const response = await axios.get('/api/items/merchant', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setProducts(response.data.items || []);
+    } catch (error) {
+      console.error('获取商品列表失败:', error);
+    } finally {
+      setLoadingProducts(false);
+    }
+  }, [token]);
+
+  const fetchPlatformProducts = useCallback(async (search = '', category = 'all') => {
+    setLoadingPlatformProducts(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (category !== 'all') params.append('category', category);
+      
+      const response = await axios.get(`/api/items/platform/list?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setPlatformProducts(response.data.items || []);
+    } catch (error) {
+      console.error('获取平台商品失败:', error);
+    } finally {
+      setLoadingPlatformProducts(false);
+    }
+  }, [token]);
+
+  // 获取登录历史
+  useEffect(() => {
+    if (activeTab === 'loginHistory' && loginHistory.length === 0) {
+      fetchLoginHistory();
+    }
+  }, [activeTab, fetchLoginHistory, loginHistory.length]);
+
+  // 获取商品列表
+  useEffect(() => {
+    if (activeTab === 'products' && products.length === 0) {
+      fetchProducts();
+    }
+  }, [activeTab, fetchProducts, products.length]);
+
+  // 获取平台商品列表
+  useEffect(() => {
+    if (showPlatformProductsModal && platformProducts.length === 0) {
+      fetchPlatformProducts();
+    }
+  }, [showPlatformProductsModal, fetchPlatformProducts, platformProducts.length]);
+
+  const handleSaveProduct = async () => {
+    if (!editingProduct) return;
+    
+    try {
+      const response = await axios.put(`/api/items/${editingProduct._id}`, {
+        name: editingProduct.name,
+        description: editingProduct.description,
+        price: editingProduct.price,
+        purchaseCount: editingProduct.purchaseCount
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.item) {
+        // 更新商品列表
+        setProducts(products.map(p => p._id === editingProduct._id ? response.data.item : p));
+        
+        // 添加操作记录
+        addOperationHistory('修改价格/库存', editingProduct.name);
+        
+        setEditingProduct(null);
+        alert('商品更新成功');
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || '更新失败');
+    }
+  };
+
+  const toggleProductStatus = async (productId: string, isOnline: boolean) => {
+    try {
+      const product = products.find(p => p._id === productId);
+      if (!product) return;
+      
+      const response = await axios.patch(`/api/items/${productId}/status`, {
+        online: !isOnline
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.item) {
+        // 更新商品列表
+        setProducts(products.map(p => p._id === productId ? response.data.item : p));
+        
+        // 添加操作记录
+        addOperationHistory(isOnline ? '下架商品' : '上架商品', product.name);
+        
+        alert(`商品已${isOnline ? '下架' : '上架'}`);
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || '操作失败');
+    }
+  };
+
+  const addOperationHistory = (operationType: string, productName: string) => {
+    const now = new Date();
+    const formattedDate = now.toISOString().slice(0, 19).replace('T', ' ');
+    
+    setProductOperationHistory([
+      {
+        date: formattedDate,
+        operationType,
+        productName
+      },
+      ...productOperationHistory.slice(0, 9) // 只保留最近10条记录
+    ]);
+  };
+
+  const handleAddPlatformProducts = async () => {
+    if (selectedPlatformProducts.length === 0) {
+      alert('请选择要添加的商品');
+      return;
+    }
+    
+    try {
+      const response = await axios.post('/api/items/merchant/add', {
+        itemIds: selectedPlatformProducts
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.items) {
+        // 更新商品列表
+        setProducts([...response.data.items, ...products]);
+        
+        // 添加操作记录
+        addOperationHistory('添加平台商品', `${selectedPlatformProducts.length}个商品`);
+        
+        // 重置状态
+        setSelectedPlatformProducts([]);
+        setShowPlatformProductsModal(false);
+        
+        alert(`成功添加 ${response.data.items.length} 个商品到您的店铺`);
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || '添加商品失败');
+    }
+  };
+
+  const handlePlatformProductSearch = () => {
+    fetchPlatformProducts(platformProductSearch, platformProductCategory);
+  };
+
+  const togglePlatformProductSelection = (productId: string) => {
+    setSelectedPlatformProducts(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
   };
 
   const handleSaveInfo = async () => {
@@ -143,6 +325,7 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
             {[
               { key: 'dashboard', label: '控制台' },
               { key: 'info', label: '商家信息' },
+              { key: 'products', label: '商品管理' },
               { key: 'loginHistory', label: '登录历史' }
             ].map((tab) => (
               <button
@@ -470,6 +653,285 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
                 </div>
               )}
             </motion.div>
+          )}
+
+          {activeTab === 'products' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">商品管理</h2>
+                <button
+                  onClick={() => {
+                    setShowPlatformProductsModal(true);
+                    setSelectedPlatformProducts([]);
+                  }}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                >
+                  添加平台商品
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* 商品列表 */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white rounded-lg shadow">
+                    <div className="p-4 border-b">
+                      <h3 className="text-lg font-medium">商品列表</h3>
+                    </div>
+                    <div className="p-4">
+                      {loadingProducts ? (
+                        <div className="flex justify-center items-center h-32">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                        </div>
+                      ) : products.length > 0 ? (
+                        <div className="space-y-4">
+                          {products.map((product) => (
+                            <div key={product._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-lg">{product.name}</h4>
+                                  <p className="text-gray-600 text-sm mt-1">{product.description}</p>
+                                  <div className="mt-2 flex items-center space-x-4">
+                                    <span className="text-lg font-semibold text-blue-600">¥{product.price}</span>
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                      product.purchaseCount !== undefined ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {product.purchaseCount !== undefined ? `已售: ${product.purchaseCount}` : '未上架'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => setEditingProduct(product)}
+                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+                                  >
+                                    编辑
+                                  </button>
+                                  <button
+                                    onClick={() => toggleProductStatus(product._id, product.purchaseCount !== undefined)}
+                                    className={`px-3 py-1 rounded text-sm ${
+                                      product.purchaseCount !== undefined 
+                                        ? 'bg-red-500 text-white hover:bg-red-600' 
+                                        : 'bg-green-500 text-white hover:bg-green-600'
+                                    } transition-colors`}
+                                  >
+                                    {product.purchaseCount !== undefined ? '下架' : '上架'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">暂无商品</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 操作历史 */}
+                <div>
+                  <div className="bg-white rounded-lg shadow">
+                    <div className="p-4 border-b">
+                      <h3 className="text-lg font-medium">操作历史</h3>
+                    </div>
+                    <div className="p-4">
+                      {productOperationHistory.length > 0 ? (
+                        <div className="space-y-3">
+                          {productOperationHistory.map((operation, index) => (
+                            <div key={index} className="border-l-4 border-blue-500 pl-3 py-1">
+                              <div className="text-sm text-gray-500">{operation.date}</div>
+                              <div className="font-medium">{operation.operationType}</div>
+                              <div className="text-sm text-gray-600">{operation.productName}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">暂无操作记录</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 编辑商品模态框 */}
+          {editingProduct && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 className="text-xl font-bold mb-4">编辑商品</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">商品名称</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={editingProduct.name}
+                      onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">商品描述</label>
+                    <textarea
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={editingProduct.description}
+                      onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})}
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">价格</label>
+                    <input
+                      type="number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={editingProduct.price}
+                      onChange={(e) => setEditingProduct({...editingProduct, price: parseFloat(e.target.value) || 0})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">库存</label>
+                    <input
+                      type="number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={editingProduct.purchaseCount || 0}
+                      onChange={(e) => setEditingProduct({...editingProduct, purchaseCount: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => setEditingProduct(null)}
+                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={handleSaveProduct}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  >
+                    保存
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 添加平台商品模态框 */}
+          {showPlatformProductsModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                <h3 className="text-xl font-bold mb-4">添加平台商品</h3>
+                
+                {/* 搜索和筛选 */}
+                <div className="flex space-x-4 mb-4">
+                  <input
+                    type="text"
+                    placeholder="搜索商品..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={platformProductSearch}
+                    onChange={(e) => setPlatformProductSearch(e.target.value)}
+                  />
+                  <select
+                    className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={platformProductCategory}
+                    onChange={(e) => setPlatformProductCategory(e.target.value)}
+                  >
+                    <option value="all">所有分类</option>
+                    <option value="attraction">景点</option>
+                    <option value="food">美食</option>
+                    <option value="hotel">酒店</option>
+                  </select>
+                  <button
+                    onClick={handlePlatformProductSearch}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  >
+                    搜索
+                  </button>
+                </div>
+                
+                {/* 商品列表 */}
+                <div className="flex-1 overflow-y-auto mb-4">
+                  {loadingPlatformProducts ? (
+                    <div className="flex justify-center items-center h-32">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : platformProducts.length > 0 ? (
+                    <div className="space-y-2">
+                      {platformProducts.map((product) => (
+                        <div
+                          key={product._id}
+                          className={`border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer ${
+                            selectedPlatformProducts.includes(product._id) ? 'border-blue-500 bg-blue-50' : ''
+                          }`}
+                          onClick={() => togglePlatformProductSelection(product._id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <input
+                                type="checkbox"
+                                checked={selectedPlatformProducts.includes(product._id)}
+                                onChange={() => togglePlatformProductSelection(product._id)}
+                                className="h-4 w-4 text-blue-600 rounded"
+                              />
+                              <div>
+                                <h4 className="font-medium">{product.name}</h4>
+                                <p className="text-sm text-gray-600">{product.description}</p>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <span className="text-sm font-semibold text-blue-600">¥{product.price}</span>
+                                  <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                                    {product.category === 'attraction' && '景点'}
+                                    {product.category === 'food' && '美食'}
+                                    {product.category === 'hotel' && '酒店'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">暂无平台商品</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* 底部操作栏 */}
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    已选择 {selectedPlatformProducts.length} 个商品
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => setShowPlatformProductsModal(false)}
+                      className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={handleAddPlatformProducts}
+                      disabled={selectedPlatformProducts.length === 0}
+                      className={`px-4 py-2 rounded transition-colors ${
+                        selectedPlatformProducts.length === 0
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-green-500 text-white hover:bg-green-600'
+                      }`}
+                    >
+                      添加选中商品
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

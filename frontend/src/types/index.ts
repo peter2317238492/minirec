@@ -16,6 +16,27 @@ export interface Item {
   tags: string[];
   reviews: Review[];
   distance?: number;
+  details?: {
+    // 景点相关
+    openingHours?: string;
+    openingMonths?: string;
+    ticketInfo?: string;
+    transportationOptions?: string[];
+    highlights?: string[];
+    features?: string;
+    
+    // 酒店相关
+    checkIn?: string;
+    checkOut?: string;
+    facilities?: string[];
+    services?: string[];
+    roomTypes?: string[];
+    
+    // 餐厅相关
+    phone?: string;
+    specialties?: string[];
+    averagePrice?: string;
+  };
 }
 
 export interface Review {
