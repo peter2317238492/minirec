@@ -302,7 +302,7 @@ const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onRev
                 )}
 
                 {/* 交通选项 */}
-                {item.details.transportationOptions && (
+                {item.details.transportationOptions && Array.isArray(item.details.transportationOptions) && item.details.transportationOptions.length > 0 && (
                   <motion.div 
                     className="bg-gradient-to-br from-blue-50 to-cyan-50 p-5 rounded-xl shadow-sm"
                     initial={{ opacity: 0, y: 20 }}
@@ -316,7 +316,7 @@ const ItemDetail: React.FC<ItemDetailProps> = ({ item, onBack, onPurchase, onRev
                       交通选项
                     </h3>
                     <ul className="space-y-2">
-                      {item.details.transportationOptions?.map((option: string, index: number) => (
+                      {item.details.transportationOptions.map((option: string, index: number) => (
                         <li key={index} className="text-gray-700 flex items-start">
                           <svg className="w-4 h-4 mr-2 mt-0.5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

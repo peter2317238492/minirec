@@ -20,6 +20,7 @@ const PreferencesModal = lazy(() => import('./components/PreferencesModal'));
 const MerchantLoginModal = lazy(() => import('./components/MerchantLoginModal'));
 const MerchantDashboard = lazy(() => import('./components/MerchantDashboard'));
 const PriceFilter = lazy(() => import('./components/PriceFilter'));
+const ScrollToTopButton = lazy(() => import('./components/ScrollToTopButton'));
 
 // 加载状态组件
 const LoadingFallback = () => (
@@ -29,10 +30,10 @@ const LoadingFallback = () => (
 );
 
 // 配置axios
-axios.defaults.baseURL = 'http://localhost:5000'; // 替换为你的后端地址
+axios.defaults.baseURL = 'http://minirec-production.up.railway.app'; // 替换为你的后端地址
 
 function App() {
-  // 状态管理
+  // 状态管理‘
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -936,6 +937,11 @@ const handleSearch = (query: string) => {
           </Suspense>
         </>
       )}
+      
+      {/* 返回顶部按钮 */}
+      <Suspense fallback={<LoadingFallback />}>
+        <ScrollToTopButton />
+      </Suspense>
     </motion.div>
   );
 }

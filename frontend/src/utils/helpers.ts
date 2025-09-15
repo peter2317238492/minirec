@@ -1,11 +1,12 @@
 // frontend/src/utils/helpers.ts
-export const formatPurchaseCount = (count: number = 0): string => {
-  if (count >= 10000) {
-    return `${(count / 10000).toFixed(1)}万+`;
-  } else if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}k+`;
+export const formatPurchaseCount = (count?: number): string => {
+  const numCount = count || 0;
+  if (numCount >= 10000) {
+    return `${(numCount / 10000).toFixed(1)}万+`;
+  } else if (numCount >= 1000) {
+    return `${(numCount / 1000).toFixed(1)}k+`;
   }
-  return count.toString();
+  return numCount.toString();
 };
 
 export const categoryColors = {
