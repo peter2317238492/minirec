@@ -19,16 +19,7 @@ export class RecommendationService {
         throw new Error('用户不存在');
       }
 
-      // TODO: 调用ML服务获取推荐
-      // const response = await axios.post(`${this.mlServiceUrl}/recommend`, {
-      //   userId,
-      //   preferences: user.preferences,
-      //   purchaseHistory: user.purchaseHistory,
-      //   viewHistory: user.viewHistory
-      // });
-      // return response.data;
-
-      // 临时实现：基于用户偏好返回推荐
+      // 使用基本推荐算法
       const recommendations = await this.getBasicRecommendations(user);
       return recommendations;
     } catch (error) {
