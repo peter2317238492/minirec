@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "seed": "ts-node src/scripts/seed.ts",
+    "seed-merchant": "ts-node src/scripts/seedMerchant.ts",
     "add-items": "ts-node src/scripts/addItems.ts",
     "update-images": "ts-node src/scripts/updateImages.ts",
     "init-purchase": "ts-node src/scripts/initPurchaseCount.ts"

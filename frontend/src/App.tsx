@@ -5,7 +5,7 @@ import axios from 'axios';
 import './index.css';
 
 // 导入类型和服务
-import { Item, User } from './types';
+import { Item, User, Merchant, MerchantLoginInfo } from './types';
 import { apiService } from './services/api';
 import { getUserLocation } from './utils/location';
 import { useInfiniteScroll } from './hooks/useInfiniteScroll';
@@ -17,6 +17,9 @@ const ItemCard = lazy(() => import('./components/ItemCard'));
 const ItemDetail = lazy(() => import('./components/ItemDetail'));
 const LoginModal = lazy(() => import('./components/LoginModal'));
 const PreferencesModal = lazy(() => import('./components/PreferencesModal'));
+const MerchantLoginModal = lazy(() => import('./components/MerchantLoginModal'));
+const MerchantDashboard = lazy(() => import('./components/MerchantDashboard'));
+const PriceFilter = lazy(() => import('./components/PriceFilter'));
 
 // 加载状态组件
 const LoadingFallback = () => (
@@ -26,7 +29,7 @@ const LoadingFallback = () => (
 );
 
 // 配置axios
-axios.defaults.baseURL = 'https://minirec-production.up.railway.app';
+axios.defaults.baseURL = 'http://localhost:5000'; // 替换为你的后端地址
 
 function App() {
   // 状态管理
@@ -34,27 +37,47 @@ function App() {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [user, setUser] = useState<User | null>(null);
+  const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [token, setToken] = useState<string>('');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showMerchantLoginModal, setShowMerchantLoginModal] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [recommendations, setRecommendations] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isRegister, setIsRegister] = useState(false);
+  const [isMerchantRegister, setIsMerchantRegister] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [itemsPerPage] = useState(8);
+  const [loginInfo, setLoginInfo] = useState<MerchantLoginInfo | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
 
   // 初始化
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
+    const savedMerchant = localStorage.getItem('merchant');
     const savedToken = localStorage.getItem('token');
+    const savedLoginInfo = localStorage.getItem('loginInfo');
+    
     if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
       setToken(savedToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+      if (parsedUser.preferences?.priceRange) {
+        setPriceRange(parsedUser.preferences.priceRange);
+      }
+    } else if (savedMerchant && savedToken) {
+      setMerchant(JSON.parse(savedMerchant));
+      setToken(savedToken);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+      if (savedLoginInfo) {
+        setLoginInfo(JSON.parse(savedLoginInfo));
+      }
     }
+    
     loadItems();
     
     // 获取用户位置
@@ -63,13 +86,13 @@ function App() {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 监听类别和搜索变化
+  // 监听类别、搜索和价格变化
   useEffect(() => {
     setCurrentPage(1);
     setItems([]);
     setHasMore(true);
     loadItems(true);
-  }, [selectedCategory, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedCategory, searchQuery, priceRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 监听用户登录状态
   useEffect(() => {
@@ -112,6 +135,7 @@ function App() {
   console.log('当前状态 - selectedCategory:', selectedCategory);
   console.log('当前状态 - searchQuery:', searchQuery, 'type:', typeof searchQuery);
   console.log('当前状态 - currentPage:', currentPage);
+  console.log('当前状态 - priceRange:', priceRange);
   
   try {
     const params: any = {
@@ -129,6 +153,13 @@ function App() {
     if (searchQuery && searchQuery.trim() !== '') {
       params.search = searchQuery.trim();
       console.log('添加search参数:', params.search);
+    }
+    
+    // 处理价格筛选
+    if (priceRange && priceRange[0] >= 0 && priceRange[1] > 0) {
+      params.minPrice = priceRange[0];
+      params.maxPrice = priceRange[1];
+      console.log('添加价格参数:', params.minPrice, '-', params.maxPrice);
     }
     
     console.log('最终请求参数:', params);
@@ -185,20 +216,54 @@ function App() {
   // 处理登录
   const handleLogin = (loggedInUser: User, authToken: string) => {
     setUser(loggedInUser);
+    setMerchant(null);
     setToken(authToken);
     localStorage.setItem('user', JSON.stringify(loggedInUser));
+    localStorage.removeItem('merchant');
     localStorage.setItem('token', authToken);
     axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+  };
+
+  // 处理商家登录
+  const handleMerchantLogin = (loggedInMerchant: Merchant, authToken: string, loginInfo?: MerchantLoginInfo) => {
+    setMerchant(loggedInMerchant);
+    setUser(null);
+    setToken(authToken);
+    localStorage.setItem('merchant', JSON.stringify(loggedInMerchant));
+    localStorage.removeItem('user');
+    localStorage.setItem('token', authToken);
+    if (loginInfo) {
+      localStorage.setItem('loginInfo', JSON.stringify(loginInfo));
+      setLoginInfo(loginInfo);
+    }
+    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+    setShowMerchantLoginModal(false);
   };
 
   // 处理登出
   const handleLogout = () => {
     setUser(null);
+    setMerchant(null);
     setToken('');
+    setLoginInfo(null);
+    setPriceRange([0, 10000]);
     localStorage.removeItem('user');
+    localStorage.removeItem('merchant');
     localStorage.removeItem('token');
+    localStorage.removeItem('loginInfo');
     delete axios.defaults.headers.common['Authorization'];
     setRecommendations([]);
+  };
+
+  // 处理商家登出
+  const handleMerchantLogout = () => {
+    setMerchant(null);
+    setToken('');
+    setLoginInfo(null);
+    localStorage.removeItem('merchant');
+    localStorage.removeItem('token');
+    localStorage.removeItem('loginInfo');
+    delete axios.defaults.headers.common['Authorization'];
   };
 
   // 处理购买
@@ -262,6 +327,9 @@ function App() {
   const handleSavePreferences = (preferences: any) => {
     if (user) {
       setUser({ ...user, preferences });
+      if (preferences.priceRange) {
+        setPriceRange(preferences.priceRange);
+      }
       loadRecommendations();
     }
   };
@@ -339,7 +407,43 @@ const handleSearch = (query: string) => {
             transition={{ delay: 0.3, type: "spring", stiffness: 300, damping: 20 }}
           >
             <AnimatePresence mode="wait">
-              {user ? (
+              {merchant ? (
+                <motion.div 
+                  key="merchant-logged-in"
+                  className="flex items-center gap-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <motion.div 
+                    className="flex items-center gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <motion.div 
+                      className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-teal-500 flex items-center justify-center text-white font-semibold"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      {merchant.username[0].toUpperCase()}
+                    </motion.div>
+                    <span className="text-gray-700 font-medium">商家, {merchant.username}</span>
+                  </motion.div>
+                  <motion.button 
+                    onClick={handleMerchantLogout}
+                    className="px-4 py-2 border border-gray-300 rounded-lg"
+                    whileHover={{ 
+                      scale: 1.05,
+                      backgroundColor: "#f9fafb"
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    退出
+                  </motion.button>
+                </motion.div>
+              ) : user ? (
                 <motion.div 
                   key="user-logged-in"
                   className="flex items-center gap-4"
@@ -388,25 +492,45 @@ const handleSearch = (query: string) => {
                   </motion.button>
                 </motion.div>
               ) : (
-                <motion.button
-                  key="login-button"
-                  onClick={() => {
-                    setIsRegister(false);
-                    setShowLoginModal(true);
-                  }}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg shadow-md"
-                  whileHover={{ 
-                    scale: 1.05,
-                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
-                  }}
-                  whileTap={{ scale: 0.95 }}
+                <motion.div
+                  key="auth-buttons"
+                  className="flex items-center gap-2"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
-                  登录/注册
-                </motion.button>
+                  <motion.button
+                    onClick={() => {
+                      setIsRegister(false);
+                      setShowLoginModal(true);
+                    }}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg shadow-md"
+                    whileHover={{ 
+                      scale: 1.05,
+                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    用户登录
+                  </motion.button>
+                  <motion.button
+                    onClick={() => {
+                      setIsMerchantRegister(false);
+                      setShowMerchantLoginModal(true);
+                    }}
+                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg shadow-md"
+                    whileHover={{ 
+                      scale: 1.05,
+                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    商家登录
+                  </motion.button>
+                </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
@@ -502,7 +626,16 @@ const handleSearch = (query: string) => {
         transition={{ delay: 0.5, duration: 0.5 }}
       >
         <AnimatePresence mode="wait">
-          {selectedItem ? (
+          {merchant ? (
+            <Suspense fallback={<LoadingFallback />}>
+              <MerchantDashboard 
+                merchant={merchant} 
+                token={token} 
+                loginInfo={loginInfo || undefined}
+                onLogout={handleMerchantLogout}
+              />
+            </Suspense>
+          ) : selectedItem ? (
             <motion.div
               key="item-detail"
               initial={{ opacity: 0, x: 100 }}
@@ -588,6 +721,14 @@ const handleSearch = (query: string) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
             >
+              {/* 价格筛选器 */}
+              <Suspense fallback={<LoadingFallback />}>
+                <PriceFilter 
+                  priceRange={priceRange}
+                  onPriceRangeChange={setPriceRange}
+                />
+              </Suspense>
+              
               {!searchQuery && (
                 <motion.div 
                   className="flex items-center mb-6"
@@ -757,6 +898,16 @@ const handleSearch = (query: string) => {
           onLogin={handleLogin}
           isRegister={isRegister}
           setIsRegister={setIsRegister}
+        />
+      </Suspense>
+
+      <Suspense fallback={<LoadingFallback />}>
+        <MerchantLoginModal 
+          isOpen={showMerchantLoginModal}
+          onClose={() => setShowMerchantLoginModal(false)}
+          onLogin={handleMerchantLogin}
+          isRegister={isMerchantRegister}
+          setIsRegister={setIsMerchantRegister}
         />
       </Suspense>
       
