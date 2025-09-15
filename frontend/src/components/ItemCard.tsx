@@ -65,7 +65,7 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
           {categoryLabels[item.category]}
         </motion.span>
         
-        {item.purchaseCount && item.purchaseCount > 100 && (
+        {item.purchaseCount && item.purchaseCount > 5000 && (
           <motion.span 
             className="absolute top-3 left-3 px-2 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full text-xs font-semibold shadow-lg"
             animate={{ 
