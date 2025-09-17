@@ -30,7 +30,7 @@ const LoadingFallback = () => (
 );
 
 // 配置axios - 优先使用环境变量，开发环境默认使用本地服务器
-axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'https://minirec-production.up.railway.app';
 
 function App() {
   // 状态管理‘
