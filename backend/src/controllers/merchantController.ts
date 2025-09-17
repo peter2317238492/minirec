@@ -652,7 +652,7 @@ export const merchantController = {
       }
       
       const merchantItems = await Item.find(query).select('_id name');
-      const itemIds = merchantItems.map(item => item._id);
+      const itemIds = merchantItems.map((item: any) => item._id);
       
       if (itemIds.length === 0) {
         return res.json({
@@ -689,12 +689,12 @@ export const merchantController = {
 
       // 获取商品名称映射
       const itemMap = new Map();
-      merchantItems.forEach(item => {
+      merchantItems.forEach((item: any) => {
         itemMap.set(item._id.toString(), item.name);
       });
 
       // 添加商品名称到评论中
-      const reviewsWithItemName = reviews.map(review => ({
+      const reviewsWithItemName = reviews.map((review: any) => ({
         ...review,
         itemName: itemMap.get(review.itemId.toString()) || '未知商品'
       }));
@@ -714,7 +714,7 @@ export const merchantController = {
       };
 
       if (allReviews.length > 0) {
-        const sum = allReviews.reduce((acc, review) => {
+        const sum = allReviews.reduce((acc: any, review: any) => {
           acc.rating += review.rating || 0;
           acc.taste += review.taste || 0;
           acc.service += review.service || 0;
@@ -727,13 +727,13 @@ export const merchantController = {
         }, { rating: 0, taste: 0, service: 0, environment: 0, comfort: 0, location: 0, scenery: 0, transportation: 0 });
 
         summary.averageRating = Number((sum.rating / allReviews.length).toFixed(2));
-        summary.averageTaste = Number((sum.taste / allReviews.filter(r => r.taste).length).toFixed(2)) || 0;
-        summary.averageService = Number((sum.service / allReviews.filter(r => r.service).length).toFixed(2)) || 0;
-        summary.averageEnvironment = Number((sum.environment / allReviews.filter(r => r.environment).length).toFixed(2)) || 0;
-        summary.averageComfort = Number((sum.comfort / allReviews.filter(r => r.comfort).length).toFixed(2)) || 0;
-        summary.averageLocation = Number((sum.location / allReviews.filter(r => r.location).length).toFixed(2)) || 0;
-        summary.averageScenery = Number((sum.scenery / allReviews.filter(r => r.scenery).length).toFixed(2)) || 0;
-        summary.averageTransportation = Number((sum.transportation / allReviews.filter(r => r.transportation).length).toFixed(2)) || 0;
+        summary.averageTaste = Number((sum.taste / allReviews.filter((r: any) => r.taste).length).toFixed(2)) || 0;
+        summary.averageService = Number((sum.service / allReviews.filter((r: any) => r.service).length).toFixed(2)) || 0;
+        summary.averageEnvironment = Number((sum.environment / allReviews.filter((r: any) => r.environment).length).toFixed(2)) || 0;
+        summary.averageComfort = Number((sum.comfort / allReviews.filter((r: any) => r.comfort).length).toFixed(2)) || 0;
+        summary.averageLocation = Number((sum.location / allReviews.filter((r: any) => r.location).length).toFixed(2)) || 0;
+        summary.averageScenery = Number((sum.scenery / allReviews.filter((r: any) => r.scenery).length).toFixed(2)) || 0;
+        summary.averageTransportation = Number((sum.transportation / allReviews.filter((r: any) => r.transportation).length).toFixed(2)) || 0;
       }
 
       res.json({
