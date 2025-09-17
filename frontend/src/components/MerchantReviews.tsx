@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { StarRating } from './StarRating';
+import StarRating from './StarRating';
 import axios from 'axios';
 
 interface Review {
@@ -23,9 +23,8 @@ interface Review {
   merchantResponseDate?: string;
 }
 
-interface ReviewSummary {
+interface CategorySummary {
   averageRating: number;
-  totalReviews: number;
   averageTaste: number;
   averageService: number;
   averageEnvironment: number;
@@ -33,6 +32,15 @@ interface ReviewSummary {
   averageLocation: number;
   averageScenery: number;
   averageTransportation: number;
+  totalReviews: number;
+}
+
+interface ReviewSummary {
+  averageRating: number;
+  totalReviews: number;
+  attraction: CategorySummary;
+  food: CategorySummary;
+  hotel: CategorySummary;
 }
 
 interface MerchantReviewsProps {
@@ -44,13 +52,39 @@ const MerchantReviews: React.FC<MerchantReviewsProps> = ({ token }) => {
   const [summary, setSummary] = useState<ReviewSummary>({
     averageRating: 0,
     totalReviews: 0,
-    averageTaste: 0,
-    averageService: 0,
-    averageEnvironment: 0,
-    averageComfort: 0,
-    averageLocation: 0,
-    averageScenery: 0,
-    averageTransportation: 0
+    attraction: {
+      averageRating: 0,
+      averageTaste: 0,
+      averageService: 0,
+      averageEnvironment: 0,
+      averageComfort: 0,
+      averageLocation: 0,
+      averageScenery: 0,
+      averageTransportation: 0,
+      totalReviews: 0
+    },
+    food: {
+      averageRating: 0,
+      averageTaste: 0,
+      averageService: 0,
+      averageEnvironment: 0,
+      averageComfort: 0,
+      averageLocation: 0,
+      averageScenery: 0,
+      averageTransportation: 0,
+      totalReviews: 0
+    },
+    hotel: {
+      averageRating: 0,
+      averageTaste: 0,
+      averageService: 0,
+      averageEnvironment: 0,
+      averageComfort: 0,
+      averageLocation: 0,
+      averageScenery: 0,
+      averageTransportation: 0,
+      totalReviews: 0
+    }
   });
   const [loading, setLoading] = useState(false);
   const [respondingToReview, setRespondingToReview] = useState<string | null>(null);
@@ -173,49 +207,152 @@ const MerchantReviews: React.FC<MerchantReviewsProps> = ({ token }) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 评分统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+        <div className="mb-8">
+          {/* 总体评分 */}
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
             <h3 className="text-lg font-medium text-gray-900 mb-2">总体评分</h3>
             <div className="flex items-center space-x-2">
               <span className={`text-3xl font-bold ${getRatingColor(summary.averageRating)}`}>
                 {summary.averageRating}
               </span>
-              <StarRating rating={summary.averageRating} size={20} />
+              <StarRating rating={summary.averageRating} size="md" />
             </div>
             <p className="text-sm text-gray-500 mt-1">共 {summary.totalReviews} 条评论</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">口味评分</h3>
-            <div className="flex items-center space-x-2">
-              <span className={`text-3xl font-bold ${getRatingColor(summary.averageTaste)}`}>
-                {summary.averageTaste}
-              </span>
-              <StarRating rating={summary.averageTaste} size={20} />
+          {/* 按类别分组的评分 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 景点评分 */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">景点评分</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">总体评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-lg font-semibold ${getRatingColor(summary.attraction.averageRating)}`}>
+                      {summary.attraction.averageRating}
+                    </span>
+                    <StarRating rating={summary.attraction.averageRating} size="sm" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">景色评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-sm font-semibold ${getRatingColor(summary.attraction.averageScenery)}`}>
+                      {summary.attraction.averageScenery}
+                    </span>
+                    <StarRating rating={summary.attraction.averageScenery} size="sm" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">交通评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-sm font-semibold ${getRatingColor(summary.attraction.averageTransportation)}`}>
+                      {summary.attraction.averageTransportation}
+                    </span>
+                    <StarRating rating={summary.attraction.averageTransportation} size="sm" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">服务评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-sm font-semibold ${getRatingColor(summary.attraction.averageService)}`}>
+                      {summary.attraction.averageService}
+                    </span>
+                    <StarRating rating={summary.attraction.averageService} size="sm" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">{summary.attraction.totalReviews} 条景点评论</p>
+              </div>
             </div>
-            <p className="text-sm text-gray-500 mt-1">平均口味评分</p>
-          </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">服务评分</h3>
-            <div className="flex items-center space-x-2">
-              <span className={`text-3xl font-bold ${getRatingColor(summary.averageService)}`}>
-                {summary.averageService}
-              </span>
-              <StarRating rating={summary.averageService} size={20} />
+            {/* 美食评分 */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">美食评分</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">总体评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-lg font-semibold ${getRatingColor(summary.food.averageRating)}`}>
+                      {summary.food.averageRating}
+                    </span>
+                    <StarRating rating={summary.food.averageRating} size="sm" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">口味评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-sm font-semibold ${getRatingColor(summary.food.averageTaste)}`}>
+                      {summary.food.averageTaste}
+                    </span>
+                    <StarRating rating={summary.food.averageTaste} size="sm" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">服务评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-sm font-semibold ${getRatingColor(summary.food.averageService)}`}>
+                      {summary.food.averageService}
+                    </span>
+                    <StarRating rating={summary.food.averageService} size="sm" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">环境评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-sm font-semibold ${getRatingColor(summary.food.averageEnvironment)}`}>
+                      {summary.food.averageEnvironment}
+                    </span>
+                    <StarRating rating={summary.food.averageEnvironment} size="sm" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">{summary.food.totalReviews} 条美食评论</p>
+              </div>
             </div>
-            <p className="text-sm text-gray-500 mt-1">平均服务评分</p>
-          </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">环境评分</h3>
-            <div className="flex items-center space-x-2">
-              <span className={`text-3xl font-bold ${getRatingColor(summary.averageEnvironment)}`}>
-                {summary.averageEnvironment}
-              </span>
-              <StarRating rating={summary.averageEnvironment} size={20} />
+            {/* 酒店评分 */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">酒店评分</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">总体评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-lg font-semibold ${getRatingColor(summary.hotel.averageRating)}`}>
+                      {summary.hotel.averageRating}
+                    </span>
+                    <StarRating rating={summary.hotel.averageRating} size="sm" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">舒适评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-sm font-semibold ${getRatingColor(summary.hotel.averageComfort)}`}>
+                      {summary.hotel.averageComfort}
+                    </span>
+                    <StarRating rating={summary.hotel.averageComfort} size="sm" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">服务评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-sm font-semibold ${getRatingColor(summary.hotel.averageService)}`}>
+                      {summary.hotel.averageService}
+                    </span>
+                    <StarRating rating={summary.hotel.averageService} size="sm" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">位置评分</span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-sm font-semibold ${getRatingColor(summary.hotel.averageLocation)}`}>
+                      {summary.hotel.averageLocation}
+                    </span>
+                    <StarRating rating={summary.hotel.averageLocation} size="sm" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">{summary.hotel.totalReviews} 条酒店评论</p>
+              </div>
             </div>
-            <p className="text-sm text-gray-500 mt-1">平均环境评分</p>
           </div>
         </div>
 
@@ -286,7 +423,7 @@ const MerchantReviews: React.FC<MerchantReviewsProps> = ({ token }) => {
                         <span className={`text-lg font-semibold ${getRatingColor(review.rating)}`}>
                           {review.rating}
                         </span>
-                        <StarRating rating={review.rating} size={16} />
+                        <StarRating rating={review.rating} size="sm" />
                       </div>
                     </div>
 
@@ -299,49 +436,49 @@ const MerchantReviews: React.FC<MerchantReviewsProps> = ({ token }) => {
                         {review.taste && (
                           <div className="flex items-center space-x-1">
                             <span className="text-sm text-gray-600">口味:</span>
-                            <StarRating rating={review.taste} size={12} />
+                            <StarRating rating={review.taste} size="sm" />
                             <span className="text-sm">{review.taste}</span>
                           </div>
                         )}
                         {review.service && (
                           <div className="flex items-center space-x-1">
                             <span className="text-sm text-gray-600">服务:</span>
-                            <StarRating rating={review.service} size={12} />
+                            <StarRating rating={review.service} size="sm" />
                             <span className="text-sm">{review.service}</span>
                           </div>
                         )}
                         {review.environment && (
                           <div className="flex items-center space-x-1">
                             <span className="text-sm text-gray-600">环境:</span>
-                            <StarRating rating={review.environment} size={12} />
+                            <StarRating rating={review.environment} size="sm" />
                             <span className="text-sm">{review.environment}</span>
                           </div>
                         )}
                         {review.comfort && (
                           <div className="flex items-center space-x-1">
                             <span className="text-sm text-gray-600">舒适:</span>
-                            <StarRating rating={review.comfort} size={12} />
+                            <StarRating rating={review.comfort} size="sm" />
                             <span className="text-sm">{review.comfort}</span>
                           </div>
                         )}
                         {review.location && (
                           <div className="flex items-center space-x-1">
                             <span className="text-sm text-gray-600">位置:</span>
-                            <StarRating rating={review.location} size={12} />
+                            <StarRating rating={review.location} size="sm" />
                             <span className="text-sm">{review.location}</span>
                           </div>
                         )}
                         {review.scenery && (
                           <div className="flex items-center space-x-1">
                             <span className="text-sm text-gray-600">景色:</span>
-                            <StarRating rating={review.scenery} size={12} />
+                            <StarRating rating={review.scenery} size="sm" />
                             <span className="text-sm">{review.scenery}</span>
                           </div>
                         )}
                         {review.transportation && (
                           <div className="flex items-center space-x-1">
                             <span className="text-sm text-gray-600">交通:</span>
-                            <StarRating rating={review.transportation} size={12} />
+                            <StarRating rating={review.transportation} size="sm" />
                             <span className="text-sm">{review.transportation}</span>
                           </div>
                         )}

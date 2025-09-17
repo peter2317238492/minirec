@@ -646,12 +646,13 @@ export const merchantController = {
       const Item = require('../models/Item');
       const Review = require('../models/Review');
       
-      const query: any = { merchantId };
+      // 查找商家所有商品，包括平台商品和商家专属商品
+      const query: any = { $or: [{ merchantId: null }, { merchantId }] };
       if (itemId) {
         query._id = itemId;
       }
       
-      const merchantItems = await Item.find(query).select('_id name');
+      const merchantItems = await Item.find(query).select('_id name category');
       const itemIds = merchantItems.map((item: any) => item._id);
       
       if (itemIds.length === 0) {
@@ -666,13 +667,40 @@ export const merchantController = {
           summary: {
             averageRating: 0,
             totalReviews: 0,
-            averageTaste: 0,
-            averageService: 0,
-            averageEnvironment: 0,
-            averageComfort: 0,
-            averageLocation: 0,
-            averageScenery: 0,
-            averageTransportation: 0
+            // 按类别分组的评分
+            attraction: {
+              averageRating: 0,
+              averageTaste: 0,
+              averageService: 0,
+              averageEnvironment: 0,
+              averageComfort: 0,
+              averageLocation: 0,
+              averageScenery: 0,
+              averageTransportation: 0,
+              totalReviews: 0
+            },
+            food: {
+              averageRating: 0,
+              averageTaste: 0,
+              averageService: 0,
+              averageEnvironment: 0,
+              averageComfort: 0,
+              averageLocation: 0,
+              averageScenery: 0,
+              averageTransportation: 0,
+              totalReviews: 0
+            },
+            hotel: {
+              averageRating: 0,
+              averageTaste: 0,
+              averageService: 0,
+              averageEnvironment: 0,
+              averageComfort: 0,
+              averageLocation: 0,
+              averageScenery: 0,
+              averageTransportation: 0,
+              totalReviews: 0
+            }
           }
         });
       }
@@ -689,52 +717,112 @@ export const merchantController = {
 
       // 获取商品名称映射
       const itemMap = new Map();
+      const itemCategoryMap = new Map();
       merchantItems.forEach((item: any) => {
         itemMap.set(item._id.toString(), item.name);
+        itemCategoryMap.set(item._id.toString(), item.category);
       });
 
       // 添加商品名称到评论中
       const reviewsWithItemName = reviews.map((review: any) => ({
         ...review,
-        itemName: itemMap.get(review.itemId.toString()) || '未知商品'
+        itemName: itemMap.get(review.itemId.toString()) || '未知商品',
+        itemCategory: itemCategoryMap.get(review.itemId.toString()) || 'unknown'
       }));
 
       // 计算统计数据
       const allReviews = await Review.find(reviewsQuery).lean();
+      
+      // 按类别分组的评论
+      const reviewsByCategory = {
+        attraction: allReviews.filter((review: any) => 
+          itemCategoryMap.get(review.itemId.toString()) === 'attraction'
+        ),
+        food: allReviews.filter((review: any) => 
+          itemCategoryMap.get(review.itemId.toString()) === 'food'
+        ),
+        hotel: allReviews.filter((review: any) => 
+          itemCategoryMap.get(review.itemId.toString()) === 'hotel'
+        )
+      };
+
+      // 计算总体统计数据
       const summary = {
         averageRating: 0,
         totalReviews: allReviews.length,
-        averageTaste: 0,
-        averageService: 0,
-        averageEnvironment: 0,
-        averageComfort: 0,
-        averageLocation: 0,
-        averageScenery: 0,
-        averageTransportation: 0
+        // 按类别分组的评分
+        attraction: {
+          averageRating: 0,
+          averageTaste: 0,
+          averageService: 0,
+          averageEnvironment: 0,
+          averageComfort: 0,
+          averageLocation: 0,
+          averageScenery: 0,
+          averageTransportation: 0,
+          totalReviews: 0
+        },
+        food: {
+          averageRating: 0,
+          averageTaste: 0,
+          averageService: 0,
+          averageEnvironment: 0,
+          averageComfort: 0,
+          averageLocation: 0,
+          averageScenery: 0,
+          averageTransportation: 0,
+          totalReviews: 0
+        },
+        hotel: {
+          averageRating: 0,
+          averageTaste: 0,
+          averageService: 0,
+          averageEnvironment: 0,
+          averageComfort: 0,
+          averageLocation: 0,
+          averageScenery: 0,
+          averageTransportation: 0,
+          totalReviews: 0
+        }
       };
 
+      // 计算总体平均评分
       if (allReviews.length > 0) {
         const sum = allReviews.reduce((acc: any, review: any) => {
           acc.rating += review.rating || 0;
-          acc.taste += review.taste || 0;
-          acc.service += review.service || 0;
-          acc.environment += review.environment || 0;
-          acc.comfort += review.comfort || 0;
-          acc.location += review.location || 0;
-          acc.scenery += review.scenery || 0;
-          acc.transportation += review.transportation || 0;
           return acc;
-        }, { rating: 0, taste: 0, service: 0, environment: 0, comfort: 0, location: 0, scenery: 0, transportation: 0 });
-
+        }, { rating: 0 });
         summary.averageRating = Number((sum.rating / allReviews.length).toFixed(2));
-        summary.averageTaste = Number((sum.taste / allReviews.filter((r: any) => r.taste).length).toFixed(2)) || 0;
-        summary.averageService = Number((sum.service / allReviews.filter((r: any) => r.service).length).toFixed(2)) || 0;
-        summary.averageEnvironment = Number((sum.environment / allReviews.filter((r: any) => r.environment).length).toFixed(2)) || 0;
-        summary.averageComfort = Number((sum.comfort / allReviews.filter((r: any) => r.comfort).length).toFixed(2)) || 0;
-        summary.averageLocation = Number((sum.location / allReviews.filter((r: any) => r.location).length).toFixed(2)) || 0;
-        summary.averageScenery = Number((sum.scenery / allReviews.filter((r: any) => r.scenery).length).toFixed(2)) || 0;
-        summary.averageTransportation = Number((sum.transportation / allReviews.filter((r: any) => r.transportation).length).toFixed(2)) || 0;
       }
+
+      // 计算各类别评分
+      ['attraction', 'food', 'hotel'].forEach(category => {
+        const categoryReviews = reviewsByCategory[category as keyof typeof reviewsByCategory];
+        summary[category as keyof typeof summary].totalReviews = categoryReviews.length;
+        
+        if (categoryReviews.length > 0) {
+          const sum = categoryReviews.reduce((acc: any, review: any) => {
+            acc.rating += review.rating || 0;
+            acc.taste += review.taste || 0;
+            acc.service += review.service || 0;
+            acc.environment += review.environment || 0;
+            acc.comfort += review.comfort || 0;
+            acc.location += review.location || 0;
+            acc.scenery += review.scenery || 0;
+            acc.transportation += review.transportation || 0;
+            return acc;
+          }, { rating: 0, taste: 0, service: 0, environment: 0, comfort: 0, location: 0, scenery: 0, transportation: 0 });
+
+          summary[category as keyof typeof summary].averageRating = Number((sum.rating / categoryReviews.length).toFixed(2));
+          summary[category as keyof typeof summary].averageTaste = Number((sum.taste / categoryReviews.filter((r: any) => r.taste).length).toFixed(2)) || 0;
+          summary[category as keyof typeof summary].averageService = Number((sum.service / categoryReviews.filter((r: any) => r.service).length).toFixed(2)) || 0;
+          summary[category as keyof typeof summary].averageEnvironment = Number((sum.environment / categoryReviews.filter((r: any) => r.environment).length).toFixed(2)) || 0;
+          summary[category as keyof typeof summary].averageComfort = Number((sum.comfort / categoryReviews.filter((r: any) => r.comfort).length).toFixed(2)) || 0;
+          summary[category as keyof typeof summary].averageLocation = Number((sum.location / categoryReviews.filter((r: any) => r.location).length).toFixed(2)) || 0;
+          summary[category as keyof typeof summary].averageScenery = Number((sum.scenery / categoryReviews.filter((r: any) => r.scenery).length).toFixed(2)) || 0;
+          summary[category as keyof typeof summary].averageTransportation = Number((sum.transportation / categoryReviews.filter((r: any) => r.transportation).length).toFixed(2)) || 0;
+        }
+      });
 
       res.json({
         reviews: reviewsWithItemName,
