@@ -14,6 +14,8 @@ export interface IReview extends Document {
   transportation?: number;
   comment: string;
   date: Date;
+  merchantResponse?: string;
+  merchantResponseDate?: Date;
 }
 
 const ReviewSchema: Schema = new Schema({
@@ -29,7 +31,9 @@ const ReviewSchema: Schema = new Schema({
   scenery: { type: Number, required: false },
   transportation: { type: Number, required: false },
   comment: { type: String, required: true },
-  date: { type: Date, default: Date.now }
+  date: { type: Date, default: Date.now },
+  merchantResponse: { type: String, required: false },
+  merchantResponseDate: { type: Date, required: false }
 });
 
 export default mongoose.model<IReview>('Review', ReviewSchema);

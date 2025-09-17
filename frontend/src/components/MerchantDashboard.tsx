@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Merchant, MerchantLoginInfo, LoginRecord, Item } from '../types';
 import axios from 'axios';
+import MerchantReviews from './MerchantReviews';
 
 interface MerchantDashboardProps {
   merchant: Merchant;
@@ -17,7 +18,7 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
   loginInfo, 
   onLogout 
 }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'info' | 'products' | 'loginHistory'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'info' | 'products' | 'reviews' | 'loginHistory'>('dashboard');
   const [loginHistory, setLoginHistory] = useState<LoginRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -327,6 +328,7 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
               { key: 'dashboard', label: '控制台' },
               { key: 'info', label: '商家信息' },
               { key: 'products', label: '商品管理' },
+              { key: 'reviews', label: '评分反馈' },
               { key: 'loginHistory', label: '登录历史' }
             ].map((tab) => (
               <button
@@ -595,6 +597,10 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
                 </div>
               )}
             </motion.div>
+          )}
+
+          {activeTab === 'reviews' && (
+            <MerchantReviews token={token} />
           )}
 
           {activeTab === 'loginHistory' && (

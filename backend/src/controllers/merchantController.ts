@@ -625,5 +625,185 @@ export const merchantController = {
     } catch (error) {
       res.status(500).json({ message: '应用权限模板失败', error });
     }
+  },
+
+  // 获取商家商品的所有评论和评分
+  async getReviews(req: AuthRequest, res: Response) {
+    try {
+      const merchantId = req.merchant?.merchantId;
+      
+      if (!merchantId) {
+        return res.status(401).json({ message: '未授权访问' });
+      }
+
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const itemId = req.query.itemId as string;
+      const sortBy = req.query.sortBy as string || 'date';
+      const sortOrder = req.query.sortOrder as string === 'asc' ? 1 : -1;
+
+      // 查找商家所有商品
+      const Item = require('../models/Item');
+      const Review = require('../models/Review');
+      
+      const query: any = { merchantId };
+      if (itemId) {
+        query._id = itemId;
+      }
+      
+      const merchantItems = await Item.find(query).select('_id name');
+      const itemIds = merchantItems.map(item => item._id);
+      
+      if (itemIds.length === 0) {
+        return res.json({
+          reviews: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            pages: 0
+          },
+          summary: {
+            averageRating: 0,
+            totalReviews: 0,
+            averageTaste: 0,
+            averageService: 0,
+            averageEnvironment: 0,
+            averageComfort: 0,
+            averageLocation: 0,
+            averageScenery: 0,
+            averageTransportation: 0
+          }
+        });
+      }
+
+      // 获取评论
+      const reviewsQuery: any = { itemId: { $in: itemIds } };
+      
+      const total = await Review.countDocuments(reviewsQuery);
+      const reviews = await Review.find(reviewsQuery)
+        .sort({ [sortBy]: sortOrder })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean();
+
+      // 获取商品名称映射
+      const itemMap = new Map();
+      merchantItems.forEach(item => {
+        itemMap.set(item._id.toString(), item.name);
+      });
+
+      // 添加商品名称到评论中
+      const reviewsWithItemName = reviews.map(review => ({
+        ...review,
+        itemName: itemMap.get(review.itemId.toString()) || '未知商品'
+      }));
+
+      // 计算统计数据
+      const allReviews = await Review.find(reviewsQuery).lean();
+      const summary = {
+        averageRating: 0,
+        totalReviews: allReviews.length,
+        averageTaste: 0,
+        averageService: 0,
+        averageEnvironment: 0,
+        averageComfort: 0,
+        averageLocation: 0,
+        averageScenery: 0,
+        averageTransportation: 0
+      };
+
+      if (allReviews.length > 0) {
+        const sum = allReviews.reduce((acc, review) => {
+          acc.rating += review.rating || 0;
+          acc.taste += review.taste || 0;
+          acc.service += review.service || 0;
+          acc.environment += review.environment || 0;
+          acc.comfort += review.comfort || 0;
+          acc.location += review.location || 0;
+          acc.scenery += review.scenery || 0;
+          acc.transportation += review.transportation || 0;
+          return acc;
+        }, { rating: 0, taste: 0, service: 0, environment: 0, comfort: 0, location: 0, scenery: 0, transportation: 0 });
+
+        summary.averageRating = Number((sum.rating / allReviews.length).toFixed(2));
+        summary.averageTaste = Number((sum.taste / allReviews.filter(r => r.taste).length).toFixed(2)) || 0;
+        summary.averageService = Number((sum.service / allReviews.filter(r => r.service).length).toFixed(2)) || 0;
+        summary.averageEnvironment = Number((sum.environment / allReviews.filter(r => r.environment).length).toFixed(2)) || 0;
+        summary.averageComfort = Number((sum.comfort / allReviews.filter(r => r.comfort).length).toFixed(2)) || 0;
+        summary.averageLocation = Number((sum.location / allReviews.filter(r => r.location).length).toFixed(2)) || 0;
+        summary.averageScenery = Number((sum.scenery / allReviews.filter(r => r.scenery).length).toFixed(2)) || 0;
+        summary.averageTransportation = Number((sum.transportation / allReviews.filter(r => r.transportation).length).toFixed(2)) || 0;
+      }
+
+      res.json({
+        reviews: reviewsWithItemName,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        },
+        summary
+      });
+    } catch (error) {
+      console.error('获取商家评论失败:', error);
+      res.status(500).json({ message: '获取评论失败', error });
+    }
+  },
+
+  // 回复用户评论
+  async respondToReview(req: AuthRequest, res: Response) {
+    try {
+      const merchantId = req.merchant?.merchantId;
+      
+      if (!merchantId) {
+        return res.status(401).json({ message: '未授权访问' });
+      }
+
+      const { reviewId, response } = req.body;
+      
+      if (!reviewId || !response) {
+        return res.status(400).json({ message: '评论ID和回复内容不能为空' });
+      }
+
+      // 检查商家是否有回复权限
+      const merchant = await Merchant.findById(merchantId);
+      if (!merchant || !merchant.permissions.canRespondToReviews) {
+        return res.status(403).json({ message: '没有回复评论的权限' });
+      }
+
+      // 检查评论是否属于商家的商品
+      const Review = require('../models/Review');
+      const Item = require('../models/Item');
+      
+      const review = await Review.findById(reviewId);
+      if (!review) {
+        return res.status(404).json({ message: '评论不存在' });
+      }
+
+      const item = await Item.findOne({ _id: review.itemId, merchantId });
+      if (!item) {
+        return res.status(403).json({ message: '只能回复自己商品的评论' });
+      }
+
+      // 更新评论，添加商家回复
+      const updatedReview = await Review.findByIdAndUpdate(
+        reviewId,
+        { 
+          merchantResponse: response,
+          merchantResponseDate: new Date()
+        },
+        { new: true }
+      ).lean();
+
+      res.json({
+        message: '回复成功',
+        review: updatedReview
+      });
+    } catch (error) {
+      console.error('回复评论失败:', error);
+      res.status(500).json({ message: '回复评论失败', error });
+    }
   }
 };

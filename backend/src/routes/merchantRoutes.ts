@@ -41,4 +41,10 @@ router.put('/permissions', merchantAuthMiddleware, merchantController.updatePerm
 // 应用权限模板（需要认证）
 router.post('/apply-permission-template', merchantAuthMiddleware, merchantController.applyPermissionTemplate);
 
+// 获取商家商品评论（需要认证）
+router.get('/reviews', merchantAuthMiddleware, merchantController.getReviews);
+
+// 回复用户评论（需要认证）
+router.post('/reviews/respond', merchantAuthMiddleware, merchantController.respondToReview);
+
 export default router;
