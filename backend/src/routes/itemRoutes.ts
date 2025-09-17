@@ -68,14 +68,14 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 其他 items 相关接口仍走 controller（不会与上面冲突）
-router.get('/:id', itemController.getItemById);
-router.post('/', authMiddleware, itemController.createItem);
-
-// 平台产品和商家产品接口
+// 平台产品和商家产品接口（必须在 :id 路由之前）
 router.get('/platform/list', itemController.getPlatformItems);  // 获取平台产品列表
 router.post('/merchant/add', authMiddleware, itemController.addPlatformItemsToMerchant);  // 商家添加平台产品
 router.get('/merchant', authMiddleware, itemController.getMerchantItems);  // 获取商家产品列表
+
+// 其他 items 相关接口仍走 controller（不会与上面冲突）
+router.get('/:id', itemController.getItemById);
+router.post('/', authMiddleware, itemController.createItem);
 
 // 评价接口
 router.post('/:id/reviews', itemController.addReview);   // 提交评论
