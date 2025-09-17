@@ -220,6 +220,23 @@ function App() {
       console.log('用户返回主界面，刷新推荐列表...');
       loadRecommendations();
     }
+    
+    // 平滑滚动到推荐区域（如果存在）或页面顶部
+    setTimeout(() => {
+      const recommendationSection = document.querySelector('.recommendation-section');
+      if (recommendationSection) {
+        recommendationSection.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      } else {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
   };
 
   // 处理商品点击
@@ -237,6 +254,13 @@ function App() {
     
     // 设置选中的商品
     setSelectedItem(item);
+    
+    // 滚动到页面顶部
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth'
+    });
   };
 
   // 获取项目详情
@@ -703,7 +727,7 @@ const handleSearch = (query: string) => {
             <AnimatePresence>
               {user && recommendations.length > 0 && !searchQuery && (
                 <motion.div 
-                  className="mb-12"
+                  className="mb-12 recommendation-section"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
