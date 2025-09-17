@@ -342,12 +342,12 @@ export const itemController = {
       // 检查商家是否已经添加过这些产品
       const existingItems = await Item.find({
         merchantId,
-        originalItemId: { $in: validItemIds }
+        _id: { $in: validItemIds }
       });
       
       const existingItemIds = existingItems.map(item => 
-        item.originalItemId?.toString()
-      ).filter(Boolean);
+        item._id.toString()
+      );
       
       // 过滤掉已经添加过的产品
       const newItemIds = validItemIds.filter(id => 
@@ -365,23 +365,21 @@ export const itemController = {
         newItemIds.includes(item._id.toString())
       );
       
-      // 为商家创建产品副本
-      const merchantItems = platformItemsToAdd.map(platformItem => ({
-        ...platformItem.toObject(),
-        _id: new mongoose.Types.ObjectId(),
-        merchantId,
-        originalItemId: platformItem._id,
-        purchaseCount: 0, // 重置购买计数
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }));
-      
-      // 批量保存商家产品
-      const savedItems = await Item.insertMany(merchantItems);
+      // 直接将平台产品绑定到商家，不创建副本
+      const updatedItems = await Item.updateMany(
+        { 
+          _id: { $in: newItemIds },
+          merchantId: null 
+        },
+        { 
+          merchantId: merchantId,
+          updatedAt: new Date()
+        }
+      );
       
       res.json({
-        message: `成功添加 ${savedItems.length} 个产品到您的店铺`,
-        items: savedItems
+        message: `成功绑定 ${updatedItems.modifiedCount} 个产品到您的店铺`,
+        items: platformItemsToAdd
       });
     } catch (error) {
       res.status(500).json({ message: '添加产品失败', error });
@@ -406,6 +404,44 @@ export const itemController = {
       res.json({ items });
     } catch (error) {
       res.status(500).json({ message: '获取商家产品失败', error });
+    }
+  },
+
+  /**
+   * 商家移除产品（将产品归还给平台）
+   * DELETE /api/items/merchant/:id
+   */
+  async removeMerchantItem(req: AuthRequest, res: Response) {
+    try {
+      const merchantId = req.merchant?.merchantId;
+      if (!merchantId) {
+        return res.status(401).json({ message: '未授权访问' });
+      }
+      
+      const { id } = req.params;
+      
+      // 检查产品是否存在且属于该商家
+      const item = await Item.findOne({ 
+        _id: id, 
+        merchantId 
+      });
+      
+      if (!item) {
+        return res.status(404).json({ message: '产品不存在或无权限操作' });
+      }
+      
+      // 将产品归还给平台（设置merchantId为null）
+      await Item.findByIdAndUpdate(
+        id,
+        { 
+          merchantId: null,
+          updatedAt: new Date()
+        }
+      );
+      
+      res.json({ message: '产品已成功移除' });
+    } catch (error) {
+      res.status(500).json({ message: '移除产品失败', error });
     }
   },
 

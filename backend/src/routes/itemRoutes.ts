@@ -72,6 +72,7 @@ router.get('/', async (req, res) => {
 router.get('/platform/list', itemController.getPlatformItems);  // 获取平台产品列表
 router.post('/merchant/add', authMiddleware, itemController.addPlatformItemsToMerchant);  // 商家添加平台产品
 router.get('/merchant', authMiddleware, itemController.getMerchantItems);  // 获取商家产品列表
+router.delete('/merchant/:id', authMiddleware, itemController.removeMerchantItem);  // 商家移除产品
 
 // 其他 items 相关接口仍走 controller（不会与上面冲突）
 router.get('/:id', itemController.getItemById);

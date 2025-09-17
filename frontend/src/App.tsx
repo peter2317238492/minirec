@@ -1,5 +1,5 @@
 // frontend/src/App.tsx - 简化后的主文件
-import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import './index.css';
@@ -11,16 +11,16 @@ import { getUserLocation } from './utils/location';
 import { useInfiniteScroll } from './hooks/useInfiniteScroll';
 
 // 导入组件
-const SearchBar = lazy(() => import('./components/SearchBar'));
-const ReviewModal = lazy(() => import('./components/ReviewModal'));
-const ItemCard = lazy(() => import('./components/ItemCard'));
-const ItemDetail = lazy(() => import('./components/ItemDetail'));
-const LoginModal = lazy(() => import('./components/LoginModal'));
-const PreferencesModal = lazy(() => import('./components/PreferencesModal'));
-const MerchantLoginModal = lazy(() => import('./components/MerchantLoginModal'));
-const MerchantDashboard = lazy(() => import('./components/MerchantDashboard'));
-const PriceFilter = lazy(() => import('./components/PriceFilter'));
-const ScrollToTopButton = lazy(() => import('./components/ScrollToTopButton'));
+const SearchBar = React.lazy(() => import('./components/SearchBar'));
+const ReviewModal = React.lazy(() => import('./components/ReviewModal'));
+const ItemCard = React.lazy(() => import('./components/ItemCard'));
+const ItemDetail = React.lazy(() => import('./components/ItemDetail'));
+const LoginModal = React.lazy(() => import('./components/LoginModal'));
+const PreferencesModal = React.lazy(() => import('./components/PreferencesModal'));
+const MerchantLoginModal = React.lazy(() => import('./components/MerchantLoginModal'));
+const MerchantDashboard = React.lazy(() => import('./components/MerchantDashboard'));
+const PriceFilter = React.lazy(() => import('./components/PriceFilter'));
+const ScrollToTopButton = React.lazy(() => import('./components/ScrollToTopButton'));
 
 // 加载状态组件
 const LoadingFallback = () => (
