@@ -2,6 +2,8 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import Merchant from '../models/Merchant';
+import Item from '../models/Item';
+import Review from '../models/Review';
 import { AuthRequest } from '../middleware/auth';
 import { loginLogger } from '../services/loginLogger';
 import { PermissionService, permissionService } from '../services/permissionService';
@@ -643,8 +645,6 @@ export const merchantController = {
       const sortOrder = req.query.sortOrder as string === 'asc' ? 1 : -1;
 
       // 查找商家所有商品
-      const Item = require('../models/Item');
-      const Review = require('../models/Review');
       
       // 查找商家所有商品，包括平台商品和商家专属商品
       const query: any = { $or: [{ merchantId: null }, { merchantId }] };
@@ -653,7 +653,7 @@ export const merchantController = {
       }
       
       const merchantItems = await Item.find(query).select('_id name category');
-      const itemIds = merchantItems.map((item: any) => item._id);
+      const itemIds = merchantItems.map((item: any) => item._id.toString());
       
       if (itemIds.length === 0) {
         return res.json({
@@ -798,7 +798,8 @@ export const merchantController = {
       // 计算各类别评分
       ['attraction', 'food', 'hotel'].forEach(category => {
         const categoryReviews = reviewsByCategory[category as keyof typeof reviewsByCategory];
-        summary[category as keyof typeof summary].totalReviews = categoryReviews.length;
+        const categorySummary = summary[category as keyof typeof summary] as any;
+        categorySummary.totalReviews = categoryReviews.length;
         
         if (categoryReviews.length > 0) {
           const sum = categoryReviews.reduce((acc: any, review: any) => {
@@ -813,14 +814,14 @@ export const merchantController = {
             return acc;
           }, { rating: 0, taste: 0, service: 0, environment: 0, comfort: 0, location: 0, scenery: 0, transportation: 0 });
 
-          summary[category as keyof typeof summary].averageRating = Number((sum.rating / categoryReviews.length).toFixed(2));
-          summary[category as keyof typeof summary].averageTaste = Number((sum.taste / categoryReviews.filter((r: any) => r.taste).length).toFixed(2)) || 0;
-          summary[category as keyof typeof summary].averageService = Number((sum.service / categoryReviews.filter((r: any) => r.service).length).toFixed(2)) || 0;
-          summary[category as keyof typeof summary].averageEnvironment = Number((sum.environment / categoryReviews.filter((r: any) => r.environment).length).toFixed(2)) || 0;
-          summary[category as keyof typeof summary].averageComfort = Number((sum.comfort / categoryReviews.filter((r: any) => r.comfort).length).toFixed(2)) || 0;
-          summary[category as keyof typeof summary].averageLocation = Number((sum.location / categoryReviews.filter((r: any) => r.location).length).toFixed(2)) || 0;
-          summary[category as keyof typeof summary].averageScenery = Number((sum.scenery / categoryReviews.filter((r: any) => r.scenery).length).toFixed(2)) || 0;
-          summary[category as keyof typeof summary].averageTransportation = Number((sum.transportation / categoryReviews.filter((r: any) => r.transportation).length).toFixed(2)) || 0;
+          categorySummary.averageRating = Number((sum.rating / categoryReviews.length).toFixed(2));
+          categorySummary.averageTaste = Number((sum.taste / categoryReviews.filter((r: any) => r.taste).length).toFixed(2)) || 0;
+          categorySummary.averageService = Number((sum.service / categoryReviews.filter((r: any) => r.service).length).toFixed(2)) || 0;
+          categorySummary.averageEnvironment = Number((sum.environment / categoryReviews.filter((r: any) => r.environment).length).toFixed(2)) || 0;
+          categorySummary.averageComfort = Number((sum.comfort / categoryReviews.filter((r: any) => r.comfort).length).toFixed(2)) || 0;
+          categorySummary.averageLocation = Number((sum.location / categoryReviews.filter((r: any) => r.location).length).toFixed(2)) || 0;
+          categorySummary.averageScenery = Number((sum.scenery / categoryReviews.filter((r: any) => r.scenery).length).toFixed(2)) || 0;
+          categorySummary.averageTransportation = Number((sum.transportation / categoryReviews.filter((r: any) => r.transportation).length).toFixed(2)) || 0;
         }
       });
 
@@ -862,8 +863,6 @@ export const merchantController = {
       }
 
       // 检查评论是否属于商家的商品
-      const Review = require('../models/Review');
-      const Item = require('../models/Item');
       
       const review = await Review.findById(reviewId);
       if (!review) {
