@@ -1,7 +1,7 @@
 // frontend/src/services/api.ts
 import axios from 'axios';
 
-axios.defaults.baseURL = 'http://localhost:5000';
+axios.defaults.baseURL = 'https://minirec-production.up.railway.app';
 
 export const apiService = {
   // 项目相关
