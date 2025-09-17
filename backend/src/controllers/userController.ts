@@ -151,5 +151,67 @@ export const userController = {
     } catch (error) {
       res.status(500).json({ message: '记录浏览失败', error });
     }
+  },
+
+  // 记录商品点击
+  async recordClick(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      const { itemId } = req.body;
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: '用户不存在' });
+      }
+
+      // 查找是否已有此商品的点击记录
+      const existingClickIndex = user.clickHistory.findIndex(
+        (click) => click.itemId === itemId
+      );
+
+      if (existingClickIndex !== -1) {
+        // 增加点击次数
+        user.clickHistory[existingClickIndex].clickCount += 1;
+        user.clickHistory[existingClickIndex].lastClickDate = new Date();
+      } else {
+        // 添加新的点击记录
+        user.clickHistory.push({
+          itemId,
+          clickCount: 1,
+          lastClickDate: new Date()
+        });
+      }
+
+      await user.save();
+      res.json({ 
+        message: '点击记录成功',
+        clickCount: existingClickIndex !== -1 
+          ? user.clickHistory[existingClickIndex].clickCount 
+          : 1
+      });
+    } catch (error) {
+      res.status(500).json({ message: '记录点击失败', error });
+    }
+  },
+
+  // 获取用户点击统计
+  async getClickStats(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+
+      const user = await User.findById(userId).select('clickHistory');
+      if (!user) {
+        return res.status(404).json({ message: '用户不存在' });
+      }
+
+      // 按点击次数排序
+      const sortedClicks = user.clickHistory
+        .sort((a, b) => b.clickCount - a.clickCount)
+        .slice(0, 20); // 返回前20个最多点击的商品
+
+      res.json(sortedClicks);
+    } catch (error) {
+      res.status(500).json({ message: '获取点击统计失败', error });
+    }
   }
 };

@@ -10,6 +10,7 @@ import itemRoutes from './routes/itemRoutes';
 import merchantRoutes from './routes/merchantRoutes';
 import userRoutes from './routes/userRoutes';
 import recommendationRoutes from './routes/recommendationRoutes';
+import migrateClickHistory from './scripts/migrateClickHistory';
 
 dotenv.config();
 
@@ -65,7 +66,18 @@ if (!MONGODB_URI) {
 
 mongoose
   .connect(MONGODB_URI)
-  .then(() => console.log('✅ MongoDB连接成功'))
+  .then(async () => {
+    console.log('✅ MongoDB连接成功');
+    
+    // 自动运行clickHistory字段迁移
+    try {
+      console.log('🔄 检查是否需要迁移clickHistory字段...');
+      await migrateClickHistory();
+    } catch (error) {
+      console.error('⚠️  clickHistory迁移失败:', error);
+      // 不阻止服务器启动，只记录错误
+    }
+  })
   .catch((err) => console.error('❌ MongoDB连接失败:', err));
 
 const PORT = process.env.PORT || 5000;

@@ -1,7 +1,7 @@
 // frontend/src/services/api.ts
 import axios from 'axios';
 
-axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'https://minirec-production.up.railway.app';
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export const apiService = {
   // 项目相关
@@ -44,6 +44,23 @@ export const apiService = {
     const response = await axios.post(
       `/api/users/${userId}/purchase`,
       purchaseData,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  },
+
+  async recordClick(userId: string, itemId: string, token: string) {
+    const response = await axios.post(
+      `/api/users/${userId}/click`,
+      { itemId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return response.data;
+  },
+
+  async getClickStats(userId: string, token: string) {
+    const response = await axios.get(
+      `/api/users/${userId}/click-stats`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;

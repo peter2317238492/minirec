@@ -24,6 +24,12 @@ export interface ViewRecord {
   duration: number; // seconds
 }
 
+export interface ClickRecord {
+  itemId: string;
+  clickCount: number;
+  lastClickDate: Date;
+}
+
 /** ---------- Base user shape (without Mongoose props) ---------- */
 export interface IUser {
   username: string;
@@ -32,6 +38,7 @@ export interface IUser {
   preferences: Preference;
   purchaseHistory: PurchaseRecord[];
   viewHistory: ViewRecord[];
+  clickHistory: ClickRecord[];
 }
 
 /** ---------- Mongoose document & model typings ---------- */
@@ -58,6 +65,15 @@ const ViewSchema = new Schema<ViewRecord>(
     itemId: { type: String, required: true, trim: true },
     viewDate: { type: Date, default: Date.now },
     duration: { type: Number, required: true, min: 0 },
+  },
+  { _id: false }
+);
+
+const ClickSchema = new Schema<ClickRecord>(
+  {
+    itemId: { type: String, required: true, trim: true },
+    clickCount: { type: Number, required: true, min: 0, default: 0 },
+    lastClickDate: { type: Date, default: Date.now },
   },
   { _id: false }
 );
@@ -106,6 +122,10 @@ const UserSchema = new Schema<IUserDoc>(
     },
     viewHistory: {
       type: [ViewSchema],
+      default: [],
+    },
+    clickHistory: {
+      type: [ClickSchema],
       default: [],
     },
   },

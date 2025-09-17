@@ -30,7 +30,7 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
 
   return (
     <motion.div 
-      className="bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer"
+      className="bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer h-[480px] flex flex-col"
       onClick={onClick}
       whileHover={{ 
         y: -10,
@@ -83,9 +83,9 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
         )}
       </div>
 
-      <div className="p-5">
-        <h3 className="text-lg font-bold mb-2 text-gray-800">{item.name}</h3>
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
+      <div className="flex-1 p-5 flex flex-col">
+        <h3 className="text-lg font-bold mb-2 text-gray-800 line-clamp-1">{item.name}</h3>
+        <p className="text-gray-600 text-sm mb-3 line-clamp-2 flex-1">{item.description}</p>
         
         <div className="flex items-center justify-between mb-3">
           <StarRating rating={item.rating} />
@@ -120,7 +120,7 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 mt-auto">
           {item.tags.slice(0, 3).map((tag, index) => (
             <motion.span 
               key={tag} 

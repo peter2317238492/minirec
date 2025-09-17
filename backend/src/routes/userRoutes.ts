@@ -10,5 +10,7 @@ router.post('/login', userController.login);
 router.put('/:userId/preferences', authMiddleware, userController.updatePreferences);
 router.post('/:userId/purchase', authMiddleware, userController.recordPurchase);
 router.post('/:userId/view', authMiddleware, userController.recordView);
+router.post('/:userId/click', authMiddleware, userController.recordClick);
+router.get('/:userId/click-stats', authMiddleware, userController.getClickStats);
 
 export default router;

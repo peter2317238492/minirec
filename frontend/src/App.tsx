@@ -29,8 +29,8 @@ const LoadingFallback = () => (
   </div>
 );
 
-// 配置axios
-axios.defaults.baseURL = 'https://minirec-production.up.railway.app'; // 替换为你的后端地址
+// 配置axios - 优先使用环境变量，开发环境默认使用本地服务器
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function App() {
   // 状态管理‘
@@ -45,6 +45,7 @@ function App() {
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [recommendations, setRecommendations] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isRegister, setIsRegister] = useState(false);
   const [isMerchantRegister, setIsMerchantRegister] = useState(false);
@@ -119,7 +120,7 @@ function App() {
   }, [items, selectedCategory]);
 
   const displayRecommendations = useMemo(() => {
-    return recommendations.slice(0, 4);
+    return recommendations.slice(0, 10);
   }, [recommendations]);
 
   // 使用无限滚动hook
@@ -196,12 +197,46 @@ function App() {
   // 加载推荐
   const loadRecommendations = async () => {
     if (!user || !token) return;
+    
+    setRecommendationsLoading(true);
     try {
+      console.log('正在加载推荐...');
       const data = await apiService.getRecommendations(user.id, token);
       setRecommendations(data);
+      console.log(`推荐加载完成，共${data.length}个推荐项目`);
     } catch (error) {
       console.error('加载推荐失败:', error);
+    } finally {
+      setRecommendationsLoading(false);
     }
+  };
+
+  // 处理从商品详情返回主界面
+  const handleBackToMain = () => {
+    setSelectedItem(null);
+    
+    // 如果用户已登录，刷新推荐列表以显示基于最新点击数据的推荐
+    if (user && token) {
+      console.log('用户返回主界面，刷新推荐列表...');
+      loadRecommendations();
+    }
+  };
+
+  // 处理商品点击
+  const handleItemClick = async (item: Item) => {
+    // 记录点击统计（仅对已登录用户）
+    if (user && token) {
+      try {
+        console.log(`用户点击商品: ${item.name} (ID: ${item._id})`);
+        const response = await apiService.recordClick(user.id, item._id, token);
+        console.log(`点击记录成功，当前点击次数: ${response.clickCount}`);
+      } catch (error) {
+        console.error('记录点击失败:', error);
+      }
+    }
+    
+    // 设置选中的商品
+    setSelectedItem(item);
   };
 
   // 获取项目详情
@@ -307,6 +342,8 @@ function App() {
           // 重新加载项目以更新购买人数
           await fetchItemById(selectedItem._id);
           loadItems();
+          // 刷新推荐列表，因为购买行为可能影响推荐
+          loadRecommendations();
         }
       } catch (error: any) {
         console.error('购买失败 - 详细错误:', error.response || error);
@@ -647,7 +684,7 @@ const handleSearch = (query: string) => {
               <Suspense fallback={<LoadingFallback />}>
                 <ItemDetail 
                   item={selectedItem} 
-                  onBack={() => setSelectedItem(null)}
+                  onBack={handleBackToMain}
                   onPurchase={handlePurchase}
                   onReview={() => setShowReviewModal(true)}
                 />
@@ -686,6 +723,17 @@ const handleSearch = (query: string) => {
                     >
                       为您推荐
                     </motion.h2>
+                    {recommendationsLoading && (
+                      <motion.div 
+                        className="flex items-center gap-2 text-blue-500 ml-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                        <span className="text-sm">更新中...</span>
+                      </motion.div>
+                    )}
                     <motion.div 
                       className="ml-3 w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
                       initial={{ width: 0 }}
@@ -693,24 +741,70 @@ const handleSearch = (query: string) => {
                       transition={{ delay: 0.5, duration: 0.5 }}
                     ></motion.div>
                   </motion.div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {displayRecommendations.map((item, index) => (
-                      <motion.div 
-                        key={item._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 * index, duration: 0.5 }}
-                        whileHover={{ y: -10 }}
-                      >
-                        <Suspense fallback={<LoadingFallback />}>
-                          <ItemCard 
-                            item={item} 
-                            onClick={() => fetchItemById(item._id)}
-                          />
-                        </Suspense>
-                      </motion.div>
-                    ))}
-                  </div>
+                  
+                  {/* 第一行：基于点击的推荐 */}
+                  <motion.div 
+                    className="mb-8 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                      <span className="mr-2">🔥</span>
+                      喜好
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+                      {displayRecommendations.slice(0, 5).map((item, index) => (
+                        <motion.div 
+                          key={item._id}
+                          className="w-full h-[480px]"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.05 * index, duration: 0.5 }}
+                          whileHover={{ y: -10 }}
+                        >
+                          <Suspense fallback={<LoadingFallback />}>
+                            <ItemCard 
+                              item={item} 
+                              onClick={() => handleItemClick(item)}
+                            />
+                          </Suspense>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+
+                  {/* 第二行：基于偏好的推荐 */}
+                  <motion.div
+                    className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                      <span className="mr-2">⭐</span>
+                      偏好
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+                      {displayRecommendations.slice(5, 10).map((item, index) => (
+                        <motion.div 
+                          key={item._id}
+                          className="w-full h-[480px]"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.05 * (index + 5), duration: 0.5 }}
+                          whileHover={{ y: -10 }}
+                        >
+                          <Suspense fallback={<LoadingFallback />}>
+                            <ItemCard 
+                              item={item} 
+                              onClick={() => handleItemClick(item)}
+                            />
+                          </Suspense>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -792,7 +886,7 @@ const handleSearch = (query: string) => {
                           <Suspense fallback={<LoadingFallback />}>
                             <ItemCard 
                               item={item} 
-                              onClick={() => fetchItemById(item._id)}
+                              onClick={() => handleItemClick(item)}
                             />
                           </Suspense>
                         </motion.div>
