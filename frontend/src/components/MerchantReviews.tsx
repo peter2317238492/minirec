@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import StarRating from './StarRating';
 import axios from 'axios';
+import { debounce } from 'lodash';
 
 interface Review {
   _id: string;
@@ -87,6 +88,7 @@ const MerchantReviews: React.FC<MerchantReviewsProps> = ({ token }) => {
     }
   });
   const [loading, setLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [respondingToReview, setRespondingToReview] = useState<string | null>(null);
   const [responseText, setResponseText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,22 +132,69 @@ const MerchantReviews: React.FC<MerchantReviewsProps> = ({ token }) => {
       });
 
       setReviews(response.data.reviews || []);
-      setSummary(response.data.summary || summary);
+      setSummary(response.data.summary || {
+        averageRating: 0,
+        totalReviews: 0,
+        attraction: {
+          averageRating: 0,
+          averageTaste: 0,
+          averageService: 0,
+          averageEnvironment: 0,
+          averageComfort: 0,
+          averageLocation: 0,
+          averageScenery: 0,
+          averageTransportation: 0,
+          totalReviews: 0
+        },
+        food: {
+          averageRating: 0,
+          averageTaste: 0,
+          averageService: 0,
+          averageEnvironment: 0,
+          averageComfort: 0,
+          averageLocation: 0,
+          averageScenery: 0,
+          averageTransportation: 0,
+          totalReviews: 0
+        },
+        hotel: {
+          averageRating: 0,
+          averageTaste: 0,
+          averageService: 0,
+          averageEnvironment: 0,
+          averageComfort: 0,
+          averageLocation: 0,
+          averageScenery: 0,
+          averageTransportation: 0,
+          totalReviews: 0
+        }
+      });
       setTotalPages(response.data.pagination?.pages || 1);
+      if (!isInitialized) {
+        setIsInitialized(true);
+      }
     } catch (error) {
       console.error('获取评论失败:', error);
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage, filters, summary]);
+  }, [token, currentPage, filters, isInitialized]);
+
+  // 防抖版本的fetchReviews，避免频繁调用
+  const debouncedFetchReviews = useCallback(debounce(fetchReviews, 300), [fetchReviews]);
 
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
 
   useEffect(() => {
-    fetchReviews();
-  }, [fetchReviews]);
+    debouncedFetchReviews();
+    
+    // 组件卸载时取消防抖函数的执行
+    return () => {
+      debouncedFetchReviews.cancel();
+    };
+  }, [debouncedFetchReviews]);
 
   const handleRespondToReview = async () => {
     if (!respondingToReview || !responseText.trim()) return;
@@ -405,7 +454,11 @@ const MerchantReviews: React.FC<MerchantReviewsProps> = ({ token }) => {
             <h3 className="text-lg font-medium">用户评论</h3>
           </div>
           <div className="p-4">
-            {loading ? (
+            {!isInitialized ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            ) : loading ? (
               <div className="flex justify-center items-center h-32">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
               </div>

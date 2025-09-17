@@ -646,8 +646,8 @@ export const merchantController = {
 
       // 查找商家所有商品
       
-      // 查找商家所有商品，包括平台商品和商家专属商品
-      const query: any = { $or: [{ merchantId: null }, { merchantId }] };
+      // 只查找商家专属商品
+      const query: any = { merchantId };
       if (itemId) {
         query._id = itemId;
       }
