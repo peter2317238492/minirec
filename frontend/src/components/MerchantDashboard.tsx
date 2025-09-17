@@ -133,13 +133,14 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({
         }
       });
       
-      if (response.data.item) {
+      if (response.data) {
         // 更新商品列表
-        setProducts(products.map(p => p._id === editingProduct._id ? response.data.item : p));
+        setProducts(products.map(p => p._id === editingProduct._id ? response.data : p));
         
         // 添加操作记录
         addOperationHistory('修改价格/库存', editingProduct.name);
         
+        // 关闭编辑模态框
         setEditingProduct(null);
         alert('商品更新成功');
       }
