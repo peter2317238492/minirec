@@ -76,6 +76,7 @@ router.get('/merchant', authMiddleware, itemController.getMerchantItems);  // �
 // 其他 items 相关接口仍走 controller（不会与上面冲突）
 router.get('/:id', itemController.getItemById);
 router.post('/', authMiddleware, itemController.createItem);
+router.put('/:id', authMiddleware, itemController.updateItem);  // 更新商品信息
 
 // 评价接口
 router.post('/:id/reviews', itemController.addReview);   // 提交评论

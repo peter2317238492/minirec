@@ -407,5 +407,41 @@ export const itemController = {
     } catch (error) {
       res.status(500).json({ message: '获取商家产品失败', error });
     }
+  },
+
+  /**
+   * 更新商品信息
+   * PUT /api/items/:id
+   */
+  async updateItem(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const merchantId = req.merchant?.merchantId;
+      
+      if (!merchantId) {
+        return res.status(401).json({ message: '未授权访问' });
+      }
+      
+      // 检查商品是否存在且属于该商家
+      const existingItem = await Item.findOne({ 
+        _id: id, 
+        merchantId 
+      });
+      
+      if (!existingItem) {
+        return res.status(404).json({ message: '商品不存在或无权限修改' });
+      }
+      
+      // 更新商品信息
+      const updatedItem = await Item.findByIdAndUpdate(
+        id,
+        { ...req.body, updatedAt: new Date() },
+        { new: true, runValidators: true }
+      );
+      
+      res.json(updatedItem);
+    } catch (error) {
+      res.status(500).json({ message: '更新商品失败', error });
+    }
   }
 };
